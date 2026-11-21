@@ -331,7 +331,7 @@ class NetKasRepository(
                 if (conflictSnap.exists()) {
                     throw IllegalStateException("Pelanggan ini sudah memiliki catatan pembayaran pada bulan tujuan.")
                 }
-                val oldRef = collection.document(existingPaymentId!!)
+                val oldRef = collection.document(existingPaymentId)
                 val batch = db.batch()
                 batch.set(
                     docRef,

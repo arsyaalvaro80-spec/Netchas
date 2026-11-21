@@ -49,7 +49,7 @@ object ReceiptService {
             rows.add("Referensi Bank" to payment.bankReference.take(28))
         }
         if (!customer?.address.isNullOrBlank()) {
-            rows.add("Alamat" to customer!!.address.take(28))
+            rows.add("Alamat" to customer.address.take(28))
         }
 
         val width = 840
@@ -389,6 +389,12 @@ object ReceiptService {
                     pdfDoc.close()
                 }
             }
+
+            override fun onFinish() {
+                if (!bitmap.isRecycled) {
+                    bitmap.recycle()
+                }
+            }
         }
         printManager.print(jobName, adapter, null)
     }
@@ -481,7 +487,7 @@ object ReceiptService {
         val emailIntent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             if (!customer?.email.isNullOrBlank()) {
-                putExtra(Intent.EXTRA_EMAIL, arrayOf(customer!!.email.trim()))
+                putExtra(Intent.EXTRA_EMAIL, arrayOf(customer.email.trim()))
             }
             putExtra(Intent.EXTRA_SUBJECT, subject)
             putExtra(Intent.EXTRA_TEXT, body)

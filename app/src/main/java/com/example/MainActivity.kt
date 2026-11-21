@@ -23,12 +23,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ReceiptLong
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.outlined.Assessment
 import androidx.compose.material.icons.outlined.Dashboard
-import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.rounded.Assessment
 import androidx.compose.material.icons.rounded.Dashboard
-import androidx.compose.material.icons.rounded.ReceiptLong
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -114,7 +114,7 @@ private enum class NetKasTab(
     val testTag: String,
 ) {
     DASHBOARD(R.string.nav_dashboard, Icons.Rounded.Dashboard, Icons.Outlined.Dashboard, "nav_dashboard"),
-    BILLING(R.string.nav_billing, Icons.Rounded.ReceiptLong, Icons.Outlined.ReceiptLong, "nav_billing"),
+    BILLING(R.string.nav_billing, Icons.AutoMirrored.Rounded.ReceiptLong, Icons.AutoMirrored.Outlined.ReceiptLong, "nav_billing"),
     REPORTS(R.string.nav_reports, Icons.Rounded.Assessment, Icons.Outlined.Assessment, "nav_reports"),
 }
 

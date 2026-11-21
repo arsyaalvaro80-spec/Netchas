@@ -387,7 +387,7 @@ fun ReceiptFullScreen(
                         FullReceiptRow("Referensi Bank", payment.bankReference)
                     }
                     if (!customer?.address.isNullOrBlank()) {
-                        FullReceiptRow("Alamat", customer!!.address)
+                        FullReceiptRow("Alamat", customer.address)
                     }
                 }
 
@@ -479,23 +479,25 @@ fun ReceiptFullScreen(
                     )
                 }
 
-                if (!customer?.phone.isNullOrBlank() || !customer?.email.isNullOrBlank()) {
+                val customerPhone = customer?.phone.orEmpty()
+                val customerEmail = customer?.email.orEmpty()
+                if (customerPhone.isNotBlank() || customerEmail.isNotBlank()) {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        if (!customer?.phone.isNullOrBlank()) {
+                        if (customerPhone.isNotBlank()) {
                             Text(
-                                text = "WA Pelanggan: ${customer!!.phone}",
+                                text = "WA Pelanggan: $customerPhone",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color(0xFF15803D),
                                 fontWeight = FontWeight.Medium,
                             )
                         }
-                        if (!customer?.email.isNullOrBlank()) {
+                        if (customerEmail.isNotBlank()) {
                             Text(
-                                text = "Email Pelanggan: ${customer!!.email}",
+                                text = "Email Pelanggan: $customerEmail",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color(0xFF64748B),
                             )
