@@ -20,17 +20,19 @@ jobs:
           java-version: '21'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Accept Android SDK licenses and install SDK 36.1
         run: |
+          set +o pipefail
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager --install "platforms;android-36" "platforms;android-36.1" "build-tools;36.0.0" "platform-tools"
+          yes | sdkmanager --install "platforms;android-36" "platforms;android-36.1" "build-tools;36.0.0" "platform-tools"
 
       - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '9.3.1'
+          cache-provider: basic
 
       - name: Prepare debug keystore and env
         run: |
@@ -44,7 +46,7 @@ jobs:
           fi
 
       - name: Build Debug APK
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+        run: gradle :app:assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
       - name: Upload NetKas APK
         uses: actions/upload-artifact@v4
