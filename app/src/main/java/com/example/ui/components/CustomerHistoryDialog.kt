@@ -16,12 +16,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Payments
 import androidx.compose.material.icons.rounded.Receipt
-import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -45,10 +45,9 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.data.Customer
 import com.example.data.Payment
 import com.example.data.WalletType
-import com.example.ui.theme.AmberCash
-import com.example.ui.theme.BankBlue
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.MonoSmallStyle
+import com.example.ui.theme.netKasSemanticColors
 import com.example.util.Formatters
 
 @Composable
@@ -63,6 +62,7 @@ fun CustomerHistoryDialog(
     onOpenReceipt: (Payment) -> Unit,
     onSendWhatsAppReminder: () -> Unit,
 ) {
+    val semantic = netKasSemanticColors()
     val customerPayments = remember(allPayments, customer.id) {
         allPayments
             .filter { it.customerId == customer.id }
@@ -110,13 +110,13 @@ fun CustomerHistoryDialog(
                             Spacer(Modifier.width(8.dp))
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (customer.active) EmeraldPrimary.copy(alpha = 0.14f)
+                                color = if (customer.active) semantic.income.copy(alpha = 0.14f)
                                 else MaterialTheme.colorScheme.surfaceVariant,
                             ) {
                                 Text(
                                     text = if (customer.active) "Aktif" else "Nonaktif",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (customer.active) EmeraldPrimary
+                                    color = if (customer.active) semantic.income
                                     else MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -156,7 +156,7 @@ fun CustomerHistoryDialog(
                     HistoryMiniStat(
                         label = "Total Bayar",
                         value = Formatters.formatRupiahCompact(totalPaidAmount),
-                        accent = EmeraldPrimary,
+                        accent = semantic.income,
                         modifier = Modifier.weight(1.2f),
                     )
                     HistoryMiniStat(
@@ -168,7 +168,7 @@ fun CustomerHistoryDialog(
                     HistoryMiniStat(
                         label = "Tunai / Bank",
                         value = "$cashCount / $bankCount",
-                        accent = BankBlue,
+                        accent = semantic.bank,
                         modifier = Modifier.weight(0.95f),
                     )
                 }
@@ -198,7 +198,7 @@ fun CustomerHistoryDialog(
                             .weight(1f)
                             .testTag("history_whatsapp_button"),
                     ) {
-                        Icon(Icons.Rounded.Send, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(5.dp))
                         Text("Ingatkan WA", style = MaterialTheme.typography.labelMedium)
                     }
@@ -208,7 +208,10 @@ fun CustomerHistoryDialog(
                     Button(
                         onClick = onRecordPaymentForSelectedMonth,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = EmeraldPrimary,
+                            contentColor = Color.White,
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("history_record_payment_button"),
@@ -259,7 +262,7 @@ fun CustomerHistoryDialog(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(customerPayments, key = { it.id }) { payment ->
-                            val walletColor = if (payment.wallet == WalletType.CASH) AmberCash else BankBlue
+                            val walletColor = if (payment.wallet == WalletType.CASH) semantic.cash else semantic.bank
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
                                 color = MaterialTheme.colorScheme.surface,
@@ -289,7 +292,7 @@ fun CustomerHistoryDialog(
                                             text = Formatters.formatRupiah(payment.amount),
                                             style = MonoSmallStyle,
                                             fontWeight = FontWeight.Bold,
-                                            color = EmeraldPrimary,
+                                            color = semantic.income,
                                         )
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -305,7 +308,7 @@ fun CustomerHistoryDialog(
                                             Icon(
                                                 imageVector = Icons.Rounded.Receipt,
                                                 contentDescription = "Lihat kuitansi ${payment.yearMonth}",
-                                                tint = EmeraldPrimary,
+                                                tint = semantic.income,
                                                 modifier = Modifier.size(19.dp),
                                             )
                                         }

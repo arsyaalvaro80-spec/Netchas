@@ -7,6 +7,9 @@ import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
@@ -71,17 +74,48 @@ val NetKasShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp),
 )
 
+val LocalIsDarkTheme = staticCompositionLocalOf { false }
+
+@Immutable
+data class NetKasSemanticColors(
+    val income: Color,
+    val cash: Color,
+    val bank: Color,
+    val danger: Color,
+)
+
+@Composable
+fun netKasSemanticColors(): NetKasSemanticColors {
+    val isDark = LocalIsDarkTheme.current
+    return NetKasSemanticColors(
+        income = MaterialTheme.colorScheme.primary,
+        cash = MaterialTheme.colorScheme.tertiary,
+        bank = if (isDark) DarkBankBlue else BankBlue,
+        danger = MaterialTheme.colorScheme.error,
+    )
+}
+
+@Composable
+fun resolveDarkTheme(themeMode: com.example.util.AppThemeMode): Boolean = when (themeMode) {
+    com.example.util.AppThemeMode.LIGHT -> false
+    com.example.util.AppThemeMode.DARK -> true
+    com.example.util.AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+}
+
 @Composable
 fun NetKasTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: com.example.util.AppThemeMode = com.example.util.AppThemeMode.SYSTEM,
+    darkTheme: Boolean = resolveDarkTheme(themeMode),
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        shapes = NetKasShapes,
-        content = content
-    )
+    CompositionLocalProvider(LocalIsDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            shapes = NetKasShapes,
+            content = content
+        )
+    }
 }

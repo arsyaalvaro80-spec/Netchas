@@ -39,14 +39,15 @@ import androidx.compose.ui.unit.dp
 import com.example.R
 import com.example.ui.components.MonthPeriodBar
 import com.example.ui.components.SixMonthPerformanceChart
+import com.example.ui.components.ThemeModeSelector
 import com.example.ui.components.WalletSplitBar
-import com.example.ui.theme.AmberCash
-import com.example.ui.theme.BankBlue
+import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.CrimsonExpense
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.MonoMediumStyle
 import com.example.ui.theme.MonoSmallStyle
-import com.example.ui.theme.SlateSecondary
+import com.example.ui.theme.netKasSemanticColors
+import com.example.util.AppThemeMode
 import com.example.util.Formatters
 import com.example.viewmodel.NetKasDashboardData
 
@@ -54,6 +55,8 @@ import com.example.viewmodel.NetKasDashboardData
 fun ReportsScreen(
     data: NetKasDashboardData,
     userEmail: String?,
+    themeMode: AppThemeMode,
+    onSelectThemeMode: (AppThemeMode) -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onOpenMonthPicker: () -> Unit,
@@ -66,6 +69,7 @@ fun ReportsScreen(
     onSendDueNotification: () -> Unit,
     onSignOut: () -> Unit,
 ) {
+    val semantic = netKasSemanticColors()
     val summary = data.summary
 
     LazyColumn(
@@ -129,7 +133,10 @@ fun ReportsScreen(
                         Button(
                             onClick = onExportPdf,
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = CrimsonExpense),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CrimsonExpense,
+                                contentColor = Color.White,
+                            ),
                             contentPadding = PaddingValues(vertical = 12.dp, horizontal = 10.dp),
                             modifier = Modifier
                                 .weight(1.15f)
@@ -150,8 +157,8 @@ fun ReportsScreen(
                         OutlinedButton(
                             onClick = onSavePdfToDevice,
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = CrimsonExpense),
-                            border = BorderStroke(1.dp, CrimsonExpense.copy(alpha = 0.45f)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = semantic.danger),
+                            border = BorderStroke(1.dp, semantic.danger.copy(alpha = 0.5f)),
                             contentPadding = PaddingValues(vertical = 12.dp, horizontal = 10.dp),
                             modifier = Modifier
                                 .weight(1f)
@@ -180,7 +187,10 @@ fun ReportsScreen(
                         Button(
                             onClick = onExportExcel,
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = EmeraldPrimary,
+                                contentColor = Color.White,
+                            ),
                             contentPadding = PaddingValues(vertical = 12.dp, horizontal = 10.dp),
                             modifier = Modifier
                                 .weight(1.15f)
@@ -201,8 +211,8 @@ fun ReportsScreen(
                         OutlinedButton(
                             onClick = onSaveExcelToDevice,
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = EmeraldPrimary),
-                            border = BorderStroke(1.dp, EmeraldPrimary.copy(alpha = 0.45f)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = semantic.income),
+                            border = BorderStroke(1.dp, semantic.income.copy(alpha = 0.5f)),
                             contentPadding = PaddingValues(vertical = 12.dp, horizontal = 10.dp),
                             modifier = Modifier
                                 .weight(1f)
@@ -264,9 +274,9 @@ fun ReportsScreen(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(Modifier.height(12.dp))
-                    ReportStatRow("Pemasukan Tunai", Formatters.formatRupiah(summary.cashIncome), AmberCash)
-                    ReportStatRow("Pemasukan Transfer Bank", Formatters.formatRupiah(summary.bankIncome), BankBlue)
-                    ReportStatRow("Tunggakan (${summary.unpaidCount} org)", Formatters.formatRupiah(summary.unpaidAmount), CrimsonExpense)
+                    ReportStatRow("Pemasukan Tunai", Formatters.formatRupiah(summary.cashIncome), semantic.cash)
+                    ReportStatRow("Pemasukan Transfer Bank", Formatters.formatRupiah(summary.bankIncome), semantic.bank)
+                    ReportStatRow("Tunggakan (${summary.unpaidCount} org)", Formatters.formatRupiah(summary.unpaidAmount), semantic.danger)
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -281,7 +291,7 @@ fun ReportsScreen(
                         Text(
                             text = Formatters.formatRupiah(summary.totalIncome),
                             style = MonoMediumStyle,
-                            color = EmeraldPrimary,
+                            color = semantic.income,
                         )
                     }
 
@@ -309,12 +319,12 @@ fun ReportsScreen(
                     ReportStatRow(
                         "Total Akumulasi Dompet Tunai",
                         Formatters.formatRupiah(summary.cumulativeCashBalance),
-                        if (summary.cumulativeCashBalance >= 0) EmeraldPrimary else CrimsonExpense,
+                        if (summary.cumulativeCashBalance >= 0) semantic.income else semantic.danger,
                     )
                     ReportStatRow(
                         "Total Akumulasi Transfer Bank",
                         Formatters.formatRupiah(summary.cumulativeBankBalance),
-                        if (summary.cumulativeBankBalance >= 0) EmeraldPrimary else CrimsonExpense,
+                        if (summary.cumulativeBankBalance >= 0) semantic.income else semantic.danger,
                     )
                 }
             }
@@ -330,7 +340,7 @@ fun ReportsScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Profil Usaha, Kuitansi & Akun",
+                        text = "Profil Usaha, Tampilan & Akun",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -341,6 +351,13 @@ fun ReportsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+
+                    ThemeModeSelector(
+                        selectedMode = themeMode,
+                        onSelectMode = onSelectThemeMode,
+                    )
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -371,8 +388,8 @@ fun ReportsScreen(
                     OutlinedButton(
                         onClick = onSignOut,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CrimsonExpense),
-                        border = BorderStroke(1.dp, CrimsonExpense.copy(alpha = 0.4f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = semantic.danger),
+                        border = BorderStroke(1.dp, semantic.danger.copy(alpha = 0.45f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("sign_out_button"),
@@ -397,7 +414,7 @@ fun ReportsScreen(
 private fun ReportStatRow(
     label: String,
     value: String,
-    valueColor: androidx.compose.ui.graphics.Color = SlateSecondary,
+    valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
 ) {
     Row(
         modifier = Modifier

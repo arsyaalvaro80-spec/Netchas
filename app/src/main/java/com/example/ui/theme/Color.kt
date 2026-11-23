@@ -47,6 +47,7 @@ val DarkSlateContainer = Color(0xFF1E3A5F)
 val DarkOnSlateContainer = Color(0xFFDBEAFE)
 val DarkAmberCash = Color(0xFFFBBF24)
 val DarkAmberContainer = Color(0xFF451A03)
+val DarkBankBlue = Color(0xFF60A5FA)
 val DarkCrimsonExpense = Color(0xFFF87171)
 val DarkCrimsonContainer = Color(0xFF5C1515)
 

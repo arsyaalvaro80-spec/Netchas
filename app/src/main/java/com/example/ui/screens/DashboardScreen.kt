@@ -21,18 +21,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.ArrowDownward
+import androidx.compose.material.icons.rounded.BrightnessAuto
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.PictureAsPdf
-import androidx.compose.material.icons.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SwapHoriz
-import androidx.compose.material.icons.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -67,8 +70,6 @@ import com.example.data.Payment
 import com.example.data.WalletTransfer
 import com.example.data.WalletType
 import com.example.ui.components.MonthPeriodBar
-import com.example.ui.theme.AmberCash
-import com.example.ui.theme.BankBlue
 import com.example.ui.theme.CrimsonExpense
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.EmeraldPrimaryDark
@@ -76,6 +77,8 @@ import com.example.ui.theme.MonoLargeStyle
 import com.example.ui.theme.MonoMediumStyle
 import com.example.ui.theme.MonoSmallStyle
 import com.example.ui.theme.SlateSecondary
+import com.example.ui.theme.netKasSemanticColors
+import com.example.util.AppThemeMode
 import com.example.util.Formatters
 import com.example.viewmodel.DailyCashbookEntry
 import com.example.viewmodel.NetKasDashboardData
@@ -83,6 +86,8 @@ import com.example.viewmodel.NetKasDashboardData
 @Composable
 fun DashboardScreen(
     data: NetKasDashboardData,
+    themeMode: AppThemeMode,
+    onCycleThemeMode: () -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onOpenMonthPicker: () -> Unit,
@@ -98,6 +103,7 @@ fun DashboardScreen(
     onOpenReceipt: (Payment) -> Unit,
     onOpenTransferEdit: (WalletTransfer) -> Unit,
 ) {
+    val semantic = netKasSemanticColors()
     var summaryExpanded by remember { mutableStateOf(false) }
     var walletFilter by remember { mutableStateOf<WalletType?>(null) }
 
@@ -138,15 +144,32 @@ fun DashboardScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(
-                    onClick = onOpenSettings,
-                    modifier = Modifier.testTag("open_settings_button"),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Settings,
-                        contentDescription = "Pengaturan usaha dan kuitansi",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val themeIcon = when (themeMode) {
+                        AppThemeMode.LIGHT -> Icons.Rounded.LightMode
+                        AppThemeMode.DARK -> Icons.Rounded.DarkMode
+                        AppThemeMode.SYSTEM -> Icons.Rounded.BrightnessAuto
+                    }
+                    IconButton(
+                        onClick = onCycleThemeMode,
+                        modifier = Modifier.testTag("quick_theme_toggle_button"),
+                    ) {
+                        Icon(
+                            imageVector = themeIcon,
+                            contentDescription = "Mode tampilan: ${themeMode.labelId}",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.testTag("open_settings_button"),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = "Pengaturan usaha dan kuitansi",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
@@ -198,7 +221,7 @@ fun DashboardScreen(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    imageVector = Icons.Rounded.TrendingUp,
+                                    imageVector = Icons.AutoMirrored.Rounded.TrendingUp,
                                     contentDescription = null,
                                     tint = Color(0xFFA7F3D0),
                                     modifier = Modifier.size(18.dp),
@@ -314,7 +337,8 @@ fun DashboardScreen(
                         cumulativeBalance = data.summary.cumulativeCashBalance,
                         income = data.summary.cashIncome,
                         icon = Icons.Rounded.AccountBalanceWallet,
-                        accentColor = AmberCash,
+                        accentColor = semantic.cash,
+                        dangerColor = semantic.danger,
                         onClick = {
                             walletFilter = if (walletFilter == WalletType.CASH) null else WalletType.CASH
                         },
@@ -329,7 +353,8 @@ fun DashboardScreen(
                         cumulativeBalance = data.summary.cumulativeBankBalance,
                         income = data.summary.bankIncome,
                         icon = Icons.Rounded.AccountBalance,
-                        accentColor = BankBlue,
+                        accentColor = semantic.bank,
+                        dangerColor = semantic.danger,
                         onClick = {
                             walletFilter = if (walletFilter == WalletType.BANK_TRANSFER) null else WalletType.BANK_TRANSFER
                         },
@@ -351,7 +376,7 @@ fun DashboardScreen(
                     Icon(
                         imageVector = Icons.Rounded.SwapHoriz,
                         contentDescription = null,
-                        tint = BankBlue,
+                        tint = semantic.bank,
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(Modifier.width(8.dp))
@@ -390,7 +415,7 @@ fun DashboardScreen(
                         .testTag("quick_add_customer"),
                 )
                 QuickActionTile(
-                    icon = Icons.Rounded.ReceiptLong,
+                    icon = Icons.AutoMirrored.Rounded.ReceiptLong,
                     label = "Tagihan",
                     onClick = onGoToBilling,
                     modifier = Modifier
@@ -566,6 +591,7 @@ private fun WalletBalanceCard(
     income: Long,
     icon: ImageVector,
     accentColor: Color,
+    dangerColor: Color,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -610,7 +636,7 @@ private fun WalletBalanceCard(
             Text(
                 text = Formatters.formatRupiah(netBalance),
                 style = MonoMediumStyle,
-                color = if (netBalance >= 0) MaterialTheme.colorScheme.onSurface else CrimsonExpense,
+                color = if (netBalance >= 0) MaterialTheme.colorScheme.onSurface else dangerColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -631,7 +657,7 @@ private fun WalletBalanceCard(
                 Text(
                     text = "Total: ${Formatters.formatRupiahCompact(cumulativeBalance)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (cumulativeBalance >= 0) accentColor else CrimsonExpense,
+                    color = if (cumulativeBalance >= 0) accentColor else dangerColor,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -651,13 +677,15 @@ private fun DueDateReminderCard(
     onSendWhatsApp: (CustomerBillingItem) -> Unit,
     onViewAllBilling: () -> Unit,
 ) {
+    val semantic = netKasSemanticColors()
     val hasUrgent = urgentItems.isNotEmpty()
     val containerColor = if (hasUrgent) {
         MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.65f)
     } else {
         MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
     }
-    val accentColor = if (hasUrgent) CrimsonExpense else EmeraldPrimary
+    val accentColor = if (hasUrgent) semantic.danger else semantic.income
+    val buttonContainerColor = if (hasUrgent) CrimsonExpense else EmeraldPrimary
 
     Surface(
         shape = RoundedCornerShape(18.dp),
@@ -710,7 +738,10 @@ private fun DueDateReminderCard(
                     onClick = onSendNotification,
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = buttonContainerColor,
+                        contentColor = Color.White,
+                    ),
                     modifier = Modifier.testTag("trigger_due_notification_button"),
                 ) {
                     Text(
@@ -761,7 +792,7 @@ private fun DueDateReminderCard(
                             Text(
                                 text = "Ingatkan WA",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = EmeraldPrimary,
+                                color = semantic.income,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             )
@@ -827,17 +858,18 @@ private fun CashbookTransactionCard(
     onClick: () -> Unit,
     onOpenReceipt: (() -> Unit)?,
 ) {
+    val semantic = netKasSemanticColors()
     val walletAccent = when {
-        entry.isTransfer -> BankBlue
-        entry.wallet == WalletType.CASH -> AmberCash
-        else -> BankBlue
+        entry.isTransfer -> semantic.bank
+        entry.wallet == WalletType.CASH -> semantic.cash
+        else -> semantic.bank
     }
     val leadingBg = if (entry.isTransfer) {
-        BankBlue.copy(alpha = 0.12f)
+        semantic.bank.copy(alpha = 0.14f)
     } else {
-        EmeraldPrimary.copy(alpha = 0.12f)
+        semantic.income.copy(alpha = 0.14f)
     }
-    val leadingTint = if (entry.isTransfer) BankBlue else EmeraldPrimary
+    val leadingTint = if (entry.isTransfer) semantic.bank else semantic.income
     val leadingIcon = if (entry.isTransfer) Icons.Rounded.SwapHoriz else Icons.Rounded.ArrowDownward
     val leadingDesc = if (entry.isTransfer) "Pindah saldo dompet" else "Pemasukan"
     val badgeText = if (entry.isTransfer && entry.secondaryWallet != null) {

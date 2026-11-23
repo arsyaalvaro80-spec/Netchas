@@ -8,7 +8,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 object Formatters {
-    private val indonesiaLocale = Locale("id", "ID")
+    private val indonesiaLocale = Locale.forLanguageTag("id-ID")
 
     private val monthNamesId = listOf(
         "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -134,6 +134,7 @@ object Formatters {
     fun normalizeIndonesianPhoneForWhatsApp(rawPhone: String): String {
         val digits = rawPhone.filter { it.isDigit() }
         return when {
+            digits.startsWith("620") -> "62" + digits.drop(3)
             digits.startsWith("62") -> digits
             digits.startsWith("0") -> "62" + digits.drop(1)
             digits.startsWith("8") -> "62$digits"

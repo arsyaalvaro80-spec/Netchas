@@ -327,6 +327,10 @@ class NetKasRepository(
             path = docRef.path
 
             if (isMovingPeriod) {
+                val customerSnap = userDoc(uid).collection("customers").document(customerId).get().await()
+                if (!customerSnap.exists()) {
+                    throw IllegalStateException("Periode tidak dapat dipindahkan karena data pelanggan sudah dihapus.")
+                }
                 val conflictSnap = docRef.get().await()
                 if (conflictSnap.exists()) {
                     throw IllegalStateException("Pelanggan ini sudah memiliki catatan pembayaran pada bulan tujuan.")

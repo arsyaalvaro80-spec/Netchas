@@ -294,6 +294,7 @@ class NetKasViewModel(
         active: Boolean,
         notes: String = "",
         onDone: () -> Unit = {},
+        onError: () -> Unit = {},
     ) {
         viewModelScope.launch {
             val result = repository.saveCustomer(
@@ -317,6 +318,7 @@ class NetKasViewModel(
                 onDone()
             }.onFailure { err ->
                 _events.tryEmit(err.localizedMessage ?: "Gagal menyimpan pelanggan.")
+                onError()
             }
         }
     }
@@ -332,7 +334,7 @@ class NetKasViewModel(
             monthlyFee = customer.monthlyFee,
             dueDay = customer.dueDay,
             active = true,
-            notes = "",
+            notes = customer.notes,
         )
     }
 
@@ -360,6 +362,7 @@ class NetKasViewModel(
         paidDateMillis: Long,
         notes: String,
         onSaved: (Payment) -> Unit = {},
+        onError: () -> Unit = {},
     ) {
         viewModelScope.launch {
             val result = repository.recordOrUpdatePayment(
@@ -384,6 +387,7 @@ class NetKasViewModel(
                 onSaved(savedPayment)
             }.onFailure { err ->
                 _events.tryEmit(err.localizedMessage ?: "Gagal menyimpan pembayaran.")
+                onError()
             }
         }
     }
@@ -410,6 +414,7 @@ class NetKasViewModel(
         transferDateMillis: Long,
         notes: String,
         onDone: () -> Unit = {},
+        onError: () -> Unit = {},
     ) {
         viewModelScope.launch {
             val result = repository.saveWalletTransfer(
@@ -431,6 +436,7 @@ class NetKasViewModel(
                 onDone()
             }.onFailure { err ->
                 _events.tryEmit(err.localizedMessage ?: "Gagal menyimpan pindah saldo.")
+                onError()
             }
         }
     }
@@ -457,6 +463,7 @@ class NetKasViewModel(
         reminderDaysBefore: Long,
         remindersEnabled: Boolean,
         onDone: () -> Unit = {},
+        onError: () -> Unit = {},
     ) {
         viewModelScope.launch {
             val result = repository.saveBusinessSettings(
@@ -474,6 +481,7 @@ class NetKasViewModel(
                 onDone()
             }.onFailure { err ->
                 _events.tryEmit(err.localizedMessage ?: "Gagal menyimpan pengaturan.")
+                onError()
             }
         }
     }

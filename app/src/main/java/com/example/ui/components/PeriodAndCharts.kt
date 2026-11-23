@@ -46,10 +46,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.R
-import com.example.ui.theme.AmberCash
-import com.example.ui.theme.BankBlue
-import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.MonoSmallStyle
+import com.example.ui.theme.netKasSemanticColors
 import com.example.util.Formatters
 import com.example.viewmodel.MonthlyTrendPoint
 import kotlin.math.max
@@ -187,9 +185,11 @@ fun SixMonthPerformanceChart(
     var selectedIdx by remember(points) { mutableIntStateOf(points.lastIndex) }
     val selected = points.getOrElse(selectedIdx) { points.last() }
 
-    val cashColor = AmberCash
-    val bankColor = BankBlue
-    val totalLineColor = EmeraldPrimary
+    val semantic = netKasSemanticColors()
+    val cashColor = semantic.cash
+    val bankColor = semantic.bank
+    val totalLineColor = semantic.income
+    val dotHaloColor = MaterialTheme.colorScheme.surface
     val gridColor = MaterialTheme.colorScheme.outlineVariant
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -303,7 +303,7 @@ fun SixMonthPerformanceChart(
             )
             totalDots.forEachIndexed { idx, pt ->
                 drawCircle(
-                    color = Color.White,
+                    color = dotHaloColor,
                     radius = if (idx == selectedIdx) 5.5.dp.toPx() else 4.dp.toPx(),
                     center = pt,
                 )
@@ -363,6 +363,7 @@ fun WalletSplitBar(
     bankAmount: Long,
     modifier: Modifier = Modifier,
 ) {
+    val semantic = netKasSemanticColors()
     val total = (cashAmount + bankAmount).coerceAtLeast(1L)
     val cashFraction = if (cashAmount + bankAmount == 0L) 0.5f else (cashAmount.toFloat() / total.toFloat())
     val bankFraction = 1f - cashFraction
@@ -375,13 +376,13 @@ fun WalletSplitBar(
             Text(
                 text = "Tunai ${(cashFraction * 100).toInt()}%",
                 style = MaterialTheme.typography.labelMedium,
-                color = AmberCash,
+                color = semantic.cash,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
                 text = "Transfer Bank ${(bankFraction * 100).toInt()}%",
                 style = MaterialTheme.typography.labelMedium,
-                color = BankBlue,
+                color = semantic.bank,
                 fontWeight = FontWeight.SemiBold,
             )
         }
@@ -398,7 +399,7 @@ fun WalletSplitBar(
                     modifier = Modifier
                         .weight(cashFraction.coerceAtLeast(0.01f))
                         .height(10.dp)
-                        .background(AmberCash)
+                        .background(semantic.cash)
                 )
             }
             if (bankFraction > 0f) {
@@ -406,7 +407,7 @@ fun WalletSplitBar(
                     modifier = Modifier
                         .weight(bankFraction.coerceAtLeast(0.01f))
                         .height(10.dp)
-                        .background(BankBlue)
+                        .background(semantic.bank)
                 )
             }
         }

@@ -19,12 +19,12 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Payments
 import androidx.compose.material.icons.rounded.Receipt
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,11 +58,9 @@ import com.example.data.CustomerBillingItem
 import com.example.data.Payment
 import com.example.data.WalletType
 import com.example.ui.components.MonthPeriodBar
-import com.example.ui.theme.AmberCash
-import com.example.ui.theme.BankBlue
-import com.example.ui.theme.CrimsonExpense
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.MonoSmallStyle
+import com.example.ui.theme.netKasSemanticColors
 import com.example.util.Formatters
 import com.example.viewmodel.NetKasDashboardData
 
@@ -92,6 +90,7 @@ fun BillingScreen(
     onOpenReceipt: (Payment) -> Unit,
     onSendWhatsAppReminder: (CustomerBillingItem) -> Unit,
 ) {
+    val semantic = netKasSemanticColors()
     var searchQuery by remember { mutableStateOf("") }
     var filter by remember { mutableStateOf(BillingFilter.ALL) }
 
@@ -173,7 +172,7 @@ fun BillingScreen(
                         BillingMiniMetric(
                             label = "Tunai ($cashPaidCount org)",
                             value = Formatters.formatRupiahCompact(data.summary.cashIncome),
-                            color = AmberCash,
+                            color = semantic.cash,
                             isSelected = filter == BillingFilter.PAID_CASH,
                             onClick = {
                                 filter = if (filter == BillingFilter.PAID_CASH) BillingFilter.ALL else BillingFilter.PAID_CASH
@@ -185,7 +184,7 @@ fun BillingScreen(
                         BillingMiniMetric(
                             label = "Transfer ($bankPaidCount org)",
                             value = Formatters.formatRupiahCompact(data.summary.bankIncome),
-                            color = BankBlue,
+                            color = semantic.bank,
                             isSelected = filter == BillingFilter.PAID_BANK,
                             onClick = {
                                 filter = if (filter == BillingFilter.PAID_BANK) BillingFilter.ALL else BillingFilter.PAID_BANK
@@ -202,7 +201,7 @@ fun BillingScreen(
                         BillingMiniMetric(
                             label = "Total Lunas (${data.summary.paidCount})",
                             value = Formatters.formatRupiahCompact(data.summary.totalIncome),
-                            color = EmeraldPrimary,
+                            color = semantic.income,
                             isSelected = filter == BillingFilter.PAID,
                             onClick = {
                                 filter = if (filter == BillingFilter.PAID) BillingFilter.ALL else BillingFilter.PAID
@@ -212,7 +211,7 @@ fun BillingScreen(
                         BillingMiniMetric(
                             label = "Belum Bayar (${data.summary.unpaidCount})",
                             value = Formatters.formatRupiahCompact(data.summary.unpaidAmount),
-                            color = CrimsonExpense,
+                            color = semantic.danger,
                             isSelected = filter == BillingFilter.UNPAID,
                             onClick = {
                                 filter = if (filter == BillingFilter.UNPAID) BillingFilter.ALL else BillingFilter.UNPAID
@@ -417,13 +416,14 @@ private fun CustomerBillingCard(
     onOpenReceipt: (Payment) -> Unit,
     onSendReminder: () -> Unit,
 ) {
+    val semantic = netKasSemanticColors()
     val (statusText, statusBg, statusFg) = when (item.status) {
-        BillingStatus.PAID -> Triple("Lunas", EmeraldPrimary.copy(alpha = 0.14f), EmeraldPrimary)
-        BillingStatus.OVERDUE -> Triple("Jatuh Tempo", CrimsonExpense.copy(alpha = 0.14f), CrimsonExpense)
+        BillingStatus.PAID -> Triple("Lunas", semantic.income.copy(alpha = 0.14f), semantic.income)
+        BillingStatus.OVERDUE -> Triple("Jatuh Tempo", semantic.danger.copy(alpha = 0.14f), semantic.danger)
         BillingStatus.DUE_SOON -> Triple(
             if (item.daysUntilDue == 0) "Jatuh Tempo Hari Ini" else "H-${item.daysUntilDue}",
-            AmberCash.copy(alpha = 0.16f),
-            AmberCash
+            semantic.cash.copy(alpha = 0.16f),
+            semantic.cash
         )
         BillingStatus.UNPAID -> Triple("Belum Bayar", MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -499,7 +499,7 @@ private fun CustomerBillingCard(
 
             val payment = item.payment
             if (payment != null) {
-                val walletColor = if (payment.wallet == WalletType.CASH) AmberCash else BankBlue
+                val walletColor = if (payment.wallet == WalletType.CASH) semantic.cash else semantic.bank
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -510,7 +510,7 @@ private fun CustomerBillingCard(
                             text = Formatters.formatRupiah(payment.amount),
                             style = MonoSmallStyle,
                             fontWeight = FontWeight.Bold,
-                            color = EmeraldPrimary,
+                            color = semantic.income,
                         )
                         Text(
                             text = "${payment.wallet.labelId} • ${Formatters.formatDateFull(payment.paidDateMillis)}",
@@ -564,7 +564,7 @@ private fun CustomerBillingCard(
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.Send,
+                                imageVector = Icons.AutoMirrored.Rounded.Send,
                                 contentDescription = null,
                                 modifier = Modifier.size(15.dp),
                             )
@@ -574,7 +574,10 @@ private fun CustomerBillingCard(
                         Button(
                             onClick = onPayNow,
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = EmeraldPrimary,
+                                contentColor = Color.White,
+                            ),
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                             modifier = Modifier.testTag("pay_customer_button_${item.customer.id}"),
                         ) {
@@ -668,7 +671,10 @@ private fun InactiveCustomerCard(
                 Button(
                     onClick = onReactivate,
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = EmeraldPrimary,
+                        contentColor = Color.White,
+                    ),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                     modifier = Modifier.testTag("reactivate_customer_button_${customer.id}"),
                 ) {

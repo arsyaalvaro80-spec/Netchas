@@ -275,7 +275,8 @@ object ReportExportService {
                 payments.forEach { p ->
                     ensureSpace(18f)
                     canvas.drawText(Formatters.formatDateFull(p.paidDateMillis), 36f, y, textPaint)
-                    canvas.drawText("${p.customerName.take(24)} (${p.packageName.take(14)})", 108f, y, textPaint)
+                    val label = fitPdfText("${p.customerName} (${p.packageName})", textPaint, 214f)
+                    canvas.drawText(label, 108f, y, textPaint)
                     canvas.drawText(p.wallet.labelId, 330f, y, textPaint)
                     canvas.drawText(Formatters.formatRupiah(p.amount), pageWidth - 36f, y, rightPaint)
                     y += 16f
@@ -291,7 +292,7 @@ object ReportExportService {
                 y += 18f
                 unpaid.forEach { item ->
                     ensureSpace(18f)
-                    canvas.drawText(item.customer.name.take(30), 36f, y, textPaint)
+                    canvas.drawText(fitPdfText(item.customer.name, textPaint, 216f), 36f, y, textPaint)
                     canvas.drawText("Jatuh tempo tgl ${item.customer.dueDay}", 260f, y, textPaint)
                     canvas.drawText(Formatters.formatRupiah(item.customer.monthlyFee), pageWidth - 36f, y, rightPaint)
                     y += 16f
@@ -309,8 +310,8 @@ object ReportExportService {
                     ensureSpace(18f)
                     canvas.drawText(Formatters.formatDateFull(t.transferDateMillis), 36f, y, textPaint)
                     val desc = "${t.source.labelId} → ${t.destination.labelId}" +
-                        if (t.notes.isNotBlank()) " (${t.notes.take(24)})" else ""
-                    canvas.drawText(desc, 108f, y, textPaint)
+                        if (t.notes.isNotBlank()) " (${t.notes})" else ""
+                    canvas.drawText(fitPdfText(desc, textPaint, 340f), 108f, y, textPaint)
                     canvas.drawText(Formatters.formatRupiah(t.amount), pageWidth - 36f, y, rightPaint)
                     y += 16f
                 }
@@ -321,6 +322,16 @@ object ReportExportService {
         } finally {
             pdf.close()
         }
+    }
+
+    private fun fitPdfText(text: String, paint: Paint, maxWidth: Float): String {
+        if (paint.measureText(text) <= maxWidth) return text
+        val ellipsis = "…"
+        var end = text.length
+        while (end > 1 && paint.measureText(text.substring(0, end) + ellipsis) > maxWidth) {
+            end--
+        }
+        return text.substring(0, end) + ellipsis
     }
 
     private sealed interface ExcelCell {

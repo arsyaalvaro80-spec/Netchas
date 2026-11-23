@@ -60,7 +60,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.testTag
@@ -75,14 +74,15 @@ import com.example.data.BusinessSettings
 import com.example.data.Customer
 import com.example.data.Payment
 import com.example.data.WalletType
-import com.example.ui.theme.AmberCash
-import com.example.ui.theme.BankBlue
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.EmeraldPrimaryDark
+import com.example.ui.theme.LocalIsDarkTheme
 import com.example.ui.theme.MonoLargeStyle
-import com.example.ui.theme.MonoSmallStyle
 import com.example.util.Formatters
 import com.example.util.ReceiptService
+
+private val ReceiptInkBlack = Color(0xFF111111)
+private val ReceiptInkMuted = Color(0xFF444444)
+private val ReceiptPaperFill = Color(0xFFF5F5F5)
+private val ReceiptDashGray = Color(0xFF555555)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,7 +118,7 @@ fun ReceiptFullScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Kuitansi Pembayaran",
+                        text = "Kuitansi Hitam Putih",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -167,7 +167,7 @@ fun ReceiptFullScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = EmeraldPrimary,
+                    containerColor = ReceiptInkBlack,
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White,
                     actionIconContentColor = Color.White,
@@ -187,14 +187,32 @@ fun ReceiptFullScreen(
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    val isDarkTheme = LocalIsDarkTheme.current
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         Button(
+                            onClick = onShareWhatsApp,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isDarkTheme) Color(0xFFF5F5F5) else ReceiptInkBlack,
+                                contentColor = if (isDarkTheme) ReceiptInkBlack else Color.White,
+                            ),
+                            contentPadding = PaddingValues(vertical = 12.dp, horizontal = 10.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .testTag("share_receipt_whatsapp_button"),
+                        ) {
+                            Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Kirim WA", style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+
+                        OutlinedButton(
                             onClick = onPrint,
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
                             contentPadding = PaddingValues(vertical = 12.dp, horizontal = 10.dp),
                             modifier = Modifier
                                 .weight(1f)
@@ -203,9 +221,14 @@ fun ReceiptFullScreen(
                         ) {
                             Icon(Icons.Rounded.Print, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Cetak Printer", style = MaterialTheme.typography.labelLarge)
+                            Text("Cetak Printer", style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
+                    }
 
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
                         OutlinedButton(
                             onClick = onSaveImageToDevice,
                             shape = RoundedCornerShape(14.dp),
@@ -215,29 +238,9 @@ fun ReceiptFullScreen(
                                 .height(48.dp)
                                 .testTag("save_receipt_image_button"),
                         ) {
-                            Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(17.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Simpan PNG", style = MaterialTheme.typography.labelLarge)
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Button(
-                            onClick = onShareWhatsApp,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF15803D)),
-                            contentPadding = PaddingValues(vertical = 12.dp, horizontal = 10.dp),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .testTag("share_receipt_whatsapp_button"),
-                        ) {
-                            Icon(Icons.Rounded.Share, contentDescription = null, modifier = Modifier.size(17.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Text("Kirim WA", style = MaterialTheme.typography.labelLarge)
+                            Text("Simpan PNG", style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
 
                         OutlinedButton(
@@ -251,7 +254,7 @@ fun ReceiptFullScreen(
                         ) {
                             Icon(Icons.Rounded.Email, contentDescription = null, modifier = Modifier.size(17.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Kirim Email", style = MaterialTheme.typography.labelLarge)
+                            Text("Kirim Email", style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
@@ -265,77 +268,80 @@ fun ReceiptFullScreen(
                 .verticalScroll(rememberScrollState())
                 .background(Color.White),
         ) {
-            // Full-Width Emerald Brand Header
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(EmeraldPrimary, EmeraldPrimaryDark)
-                        )
-                    )
-                    .clickable { showQuickEditDialog = true }
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = settings.businessName.ifBlank { "NetKas Wi-Fi" },
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center,
-                    )
-                    if (settings.businessAddress.isNotBlank()) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = settings.businessAddress,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFD5F2E7),
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Phone,
-                            contentDescription = null,
-                            tint = Color(0xFFA7F3D0),
-                            modifier = Modifier.size(14.dp),
-                        )
-                        Spacer(Modifier.width(5.dp))
-                        Text(
-                            text = if (settings.businessPhone.isNotBlank()) {
-                                "Telp / WA: ${settings.businessPhone}"
-                            } else {
-                                "Ketuk untuk mengisi Nomor HP Usaha"
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color(0xFFD5F2E7),
-                        )
-                    }
-                }
-            }
-
-            // Gold accent divider stripe
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(5.dp)
-                    .background(AmberCash)
-            )
-
-            // Main Receipt Body (full width)
+            // Monochrome Black & White Paper Header (tappable to edit)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 22.dp),
+                    .clickable { showQuickEditDialog = true }
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = settings.businessName.ifBlank { "NetKas Wi-Fi" }.uppercase(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = ReceiptInkBlack,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
+                )
+                if (settings.businessAddress.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = settings.businessAddress,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = ReceiptInkMuted,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Phone,
+                        contentDescription = null,
+                        tint = ReceiptInkBlack,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.width(5.dp))
+                    Text(
+                        text = if (settings.businessPhone.isNotBlank()) {
+                            "Telp / WA: ${settings.businessPhone}"
+                        } else {
+                            "Ketuk untuk mengisi Nomor HP Usaha"
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = ReceiptInkBlack,
+                        fontWeight = FontWeight.Medium,
+                    )
+                }
+            }
+
+            // Classic Double Black Ledger Rule
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(3.dp)
+                    .background(ReceiptInkBlack)
+            )
+            Spacer(Modifier.height(3.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(1.dp)
+                    .background(ReceiptInkBlack)
+            )
+
+            // Main Receipt Body (full width monochrome)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                // Receipt title & LUNAS badge
+                // Receipt title & Monochrome LUNAS Stamp
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -343,14 +349,15 @@ fun ReceiptFullScreen(
                     Text(
                         text = "KUITANSI PEMBAYARAN WI-FI",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFF132A3E),
+                        color = ReceiptInkBlack,
                         fontWeight = FontWeight.ExtraBold,
                         textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(10.dp))
                     Surface(
-                        shape = CircleShape,
-                        color = Color(0xFFD5F2E7),
+                        shape = RoundedCornerShape(10.dp),
+                        color = ReceiptPaperFill,
+                        border = BorderStroke(1.5.dp, ReceiptInkBlack),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
@@ -359,14 +366,14 @@ fun ReceiptFullScreen(
                             Icon(
                                 imageVector = Icons.Rounded.CheckCircle,
                                 contentDescription = null,
-                                tint = EmeraldPrimary,
+                                tint = ReceiptInkBlack,
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 text = "STATUS: LUNAS",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = EmeraldPrimary,
+                                color = ReceiptInkBlack,
                                 fontWeight = FontWeight.ExtraBold,
                             )
                         }
@@ -391,11 +398,11 @@ fun ReceiptFullScreen(
                     }
                 }
 
-                // Highlighted Total Amount Card
+                // Monochrome Highlighted Total Amount Card
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color(0xFFF1F8F5),
-                    border = BorderStroke(1.5.dp, EmeraldPrimary),
+                    shape = RoundedCornerShape(14.dp),
+                    color = ReceiptPaperFill,
+                    border = BorderStroke(2.dp, ReceiptInkBlack),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(
@@ -407,28 +414,28 @@ fun ReceiptFullScreen(
                         Text(
                             text = "TOTAL PEMBAYARAN DITERIMA",
                             style = MaterialTheme.typography.labelMedium,
-                            color = EmeraldPrimary,
+                            color = ReceiptInkMuted,
                             fontWeight = FontWeight.Bold,
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
                             text = Formatters.formatRupiah(payment.amount),
                             style = MonoLargeStyle,
-                            color = EmeraldPrimary,
+                            color = ReceiptInkBlack,
                             fontWeight = FontWeight.ExtraBold,
                             textAlign = TextAlign.Center,
                         )
                     }
                 }
 
-                // Transfer Bank Account Info Box (tappable to edit)
+                // Monochrome Transfer Bank Account Info Box (tappable to edit)
                 Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFFEFF6FF),
-                    border = BorderStroke(1.dp, BankBlue.copy(alpha = 0.35f)),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFAFAFA),
+                    border = BorderStroke(1.2.dp, ReceiptInkBlack.copy(alpha = 0.75f)),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable { showQuickEditDialog = true },
                 ) {
                     Column(
@@ -444,14 +451,14 @@ fun ReceiptFullScreen(
                             Icon(
                                 imageVector = Icons.Rounded.AccountBalance,
                                 contentDescription = null,
-                                tint = BankBlue,
+                                tint = ReceiptInkBlack,
                                 modifier = Modifier.size(16.dp),
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 text = "REKENING TRANSFER RESMI",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = BankBlue,
+                                color = ReceiptInkBlack,
                                 fontWeight = FontWeight.Bold,
                             )
                         }
@@ -461,7 +468,7 @@ fun ReceiptFullScreen(
                                 "Belum diisi — ketuk untuk menambahkan rekening transfer"
                             },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (settings.bankAccountInfo.isNotBlank()) Color(0xFF1E3A8A) else Color(0xFF64748B),
+                            color = if (settings.bankAccountInfo.isNotBlank()) ReceiptInkBlack else ReceiptInkMuted,
                             fontWeight = if (settings.bankAccountInfo.isNotBlank()) FontWeight.SemiBold else FontWeight.Normal,
                             textAlign = TextAlign.Center,
                         )
@@ -473,7 +480,7 @@ fun ReceiptFullScreen(
                     Text(
                         text = "Catatan: ${payment.notes}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF475569),
+                        color = ReceiptInkMuted,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -491,7 +498,7 @@ fun ReceiptFullScreen(
                             Text(
                                 text = "WA Pelanggan: $customerPhone",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF15803D),
+                                color = ReceiptInkBlack,
                                 fontWeight = FontWeight.Medium,
                             )
                         }
@@ -499,7 +506,7 @@ fun ReceiptFullScreen(
                             Text(
                                 text = "Email Pelanggan: $customerEmail",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF64748B),
+                                color = ReceiptInkMuted,
                             )
                         }
                     }
@@ -520,13 +527,14 @@ fun ReceiptFullScreen(
                     Text(
                         text = ReceiptService.effectiveFooterText(settings),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF475569),
+                        color = ReceiptInkMuted,
                         textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(10.dp))
                     Surface(
                         shape = CircleShape,
-                        color = EmeraldPrimary.copy(alpha = 0.09f),
+                        color = ReceiptPaperFill,
+                        border = BorderStroke(1.dp, ReceiptInkBlack.copy(alpha = 0.25f)),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -535,15 +543,16 @@ fun ReceiptFullScreen(
                             Icon(
                                 imageVector = Icons.Rounded.Edit,
                                 contentDescription = null,
-                                tint = EmeraldPrimary,
+                                tint = ReceiptInkBlack,
                                 modifier = Modifier.size(14.dp),
                             )
                             Spacer(Modifier.width(5.dp))
                             Text(
                                 text = "Ubah Nama Usaha, No. HP, Rekening & Kata Terakhir",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = EmeraldPrimary,
+                                color = ReceiptInkBlack,
                                 fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center,
                             )
                         }
                     }
@@ -575,15 +584,15 @@ private fun FullReceiptRow(label: String, value: String) {
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF64748B),
+            style = MaterialTheme.typography.bodyLarge,
+            color = ReceiptInkMuted,
             modifier = Modifier.padding(end = 12.dp),
         )
         Text(
             text = value,
-            style = MonoSmallStyle,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF0F172A),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            color = ReceiptInkBlack,
             textAlign = TextAlign.End,
             modifier = Modifier.weight(1f),
         )
@@ -598,10 +607,10 @@ private fun DashedReceiptDivider() {
             .height(2.dp)
     ) {
         drawLine(
-            color = Color(0xFFCBD5E1),
+            color = ReceiptDashGray,
             start = Offset(0f, size.height / 2f),
             end = Offset(size.width, size.height / 2f),
-            strokeWidth = 2.dp.toPx(),
+            strokeWidth = 1.5.dp.toPx(),
             pathEffect = PathEffect.dashPathEffect(floatArrayOf(14f, 10f), 0f),
         )
     }
@@ -618,10 +627,10 @@ private fun ReceiptProfileQuickEditDialog(
         receiptFooterText: String,
     ) -> Unit,
 ) {
-    var businessName by remember(settings) { mutableStateOf(settings.businessName) }
-    var businessPhone by remember(settings) { mutableStateOf(settings.businessPhone) }
-    var bankAccountInfo by remember(settings) { mutableStateOf(settings.bankAccountInfo) }
-    var receiptFooterText by remember(settings) {
+    var businessName by remember { mutableStateOf(settings.businessName) }
+    var businessPhone by remember { mutableStateOf(settings.businessPhone) }
+    var bankAccountInfo by remember { mutableStateOf(settings.bankAccountInfo) }
+    var receiptFooterText by remember {
         mutableStateOf(
             settings.receiptFooterText.ifBlank { BusinessSettings.DEFAULT_RECEIPT_FOOTER }
         )
@@ -652,7 +661,7 @@ private fun ReceiptProfileQuickEditDialog(
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Edit Info Kuitansi", style = MaterialTheme.typography.titleLarge)
                         Text(
-                            "Perubahan langsung tampil di kuitansi, cetak printer, dan kiriman WA/Email.",
+                            "Perubahan langsung tampil di kuitansi hitam putih, kiriman WA, cetak printer, dan Email.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

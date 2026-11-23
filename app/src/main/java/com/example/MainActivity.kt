@@ -1,9 +1,11 @@
 package com.example
 
 import android.Manifest
+import android.graphics.Color as AndroidColor
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -82,10 +84,13 @@ import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.ReceiptFullScreen
 import com.example.ui.screens.ReportsScreen
 import com.example.ui.theme.NetKasTheme
+import com.example.ui.theme.resolveDarkTheme
+import com.example.util.AppThemeMode
 import com.example.util.DueReminderWorker
 import com.example.util.ReceiptService
 import com.example.util.ReminderNotificationHelper
 import com.example.util.ReportExportService
+import com.example.util.ThemePreferences
 import com.example.viewmodel.NetKasDashboardData
 import com.example.viewmodel.NetKasViewModel
 import com.google.firebase.Firebase
@@ -100,8 +105,39 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         ReminderNotificationHelper.ensureChannel(this)
         setContent {
-            NetKasTheme {
-                AppContent()
+            val themeMode by ThemePreferences
+                .themeModeFlow(this@MainActivity)
+                .collectAsStateWithLifecycle(initialValue = AppThemeMode.SYSTEM)
+            val isDark = resolveDarkTheme(themeMode)
+            var isReceiptOpen by remember { mutableStateOf(false) }
+            val activityScope = rememberCoroutineScope()
+
+            DisposableEffect(isDark, isReceiptOpen) {
+                enableEdgeToEdge(
+                    statusBarStyle = if (isDark || isReceiptOpen) {
+                        SystemBarStyle.dark(AndroidColor.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
+                    },
+                    navigationBarStyle = if (isDark) {
+                        SystemBarStyle.dark(AndroidColor.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
+                    },
+                )
+                onDispose {}
+            }
+
+            NetKasTheme(themeMode = themeMode, darkTheme = isDark) {
+                AppContent(
+                    themeMode = themeMode,
+                    onSelectThemeMode = { selected ->
+                        activityScope.launch {
+                            ThemePreferences.setThemeMode(this@MainActivity, selected)
+                        }
+                    },
+                    onReceiptOpenChanged = { open -> isReceiptOpen = open },
+                )
             }
         }
     }
@@ -119,7 +155,11 @@ private enum class NetKasTab(
 }
 
 @Composable
-private fun AppContent() {
+private fun AppContent(
+    themeMode: AppThemeMode,
+    onSelectThemeMode: (AppThemeMode) -> Unit,
+    onReceiptOpenChanged: (Boolean) -> Unit,
+) {
     var currentUser by remember { mutableStateOf(Firebase.auth.currentUser) }
 
     DisposableEffect(Unit) {
@@ -132,12 +172,16 @@ private fun AppContent() {
 
     val user = currentUser
     if (user == null) {
+        LaunchedEffect(Unit) { onReceiptOpenChanged(false) }
         AuthScreen(onAuthSuccess = { currentUser = Firebase.auth.currentUser })
     } else {
         key(user.uid) {
             NetKasAuthenticatedShell(
                 currentUserId = user.uid,
                 userEmail = user.email,
+                themeMode = themeMode,
+                onSelectThemeMode = onSelectThemeMode,
+                onReceiptOpenChanged = onReceiptOpenChanged,
             )
         }
     }
@@ -147,6 +191,9 @@ private fun AppContent() {
 private fun NetKasAuthenticatedShell(
     currentUserId: String,
     userEmail: String?,
+    themeMode: AppThemeMode,
+    onSelectThemeMode: (AppThemeMode) -> Unit,
+    onReceiptOpenChanged: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -188,12 +235,17 @@ private fun NetKasAuthenticatedShell(
         val pending = pendingNotificationData
         pendingNotificationData = null
         if (granted && pending != null) {
-            ReminderNotificationHelper.showDueDateSummaryNotification(
+            val sent = ReminderNotificationHelper.showDueDateSummaryNotification(
                 context = context,
                 yearMonth = pending.selectedMonth,
                 billingItems = pending.billingItems,
             )
-            scope.launch { snackbarHostState.showSnackbar("Notifikasi pengingat jatuh tempo dikirim.") }
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    if (sent) "Notifikasi pengingat jatuh tempo dikirim."
+                    else "Notifikasi diblokir oleh pengaturan sistem perangkat."
+                )
+            }
         } else if (!granted) {
             scope.launch { snackbarHostState.showSnackbar("Izin notifikasi ditolak. Aktifkan di Pengaturan perangkat.") }
         }
@@ -271,12 +323,17 @@ private fun NetKasAuthenticatedShell(
 
     fun triggerDueNotification(data: NetKasDashboardData) {
         if (ReminderNotificationHelper.hasNotificationPermission(context)) {
-            ReminderNotificationHelper.showDueDateSummaryNotification(
+            val sent = ReminderNotificationHelper.showDueDateSummaryNotification(
                 context = context,
                 yearMonth = data.selectedMonth,
                 billingItems = data.billingItems,
             )
-            scope.launch { snackbarHostState.showSnackbar("Notifikasi pengingat jatuh tempo dikirim.") }
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    if (sent) "Notifikasi pengingat jatuh tempo dikirim."
+                    else "Notifikasi dinonaktifkan di Pengaturan perangkat."
+                )
+            }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             pendingNotificationData = data
             notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -321,7 +378,12 @@ private fun NetKasAuthenticatedShell(
     // Full-screen Android Receipt View takes over the entire window cleanly
     val activeReceipt = receiptPreviewTarget
     val successData = (uiState as? UiState.Success)?.data
-    if (activeReceipt != null && successData != null) {
+    val showingReceipt = activeReceipt != null && successData != null
+    LaunchedEffect(showingReceipt) {
+        onReceiptOpenChanged(showingReceipt)
+    }
+
+    if (showingReceipt && activeReceipt != null && successData != null) {
         val customer = successData.customers.firstOrNull { it.id == activeReceipt.customerId }
         val livePayment = successData.allPayments.firstOrNull { it.id == activeReceipt.id } ?: activeReceipt
         ReceiptFullScreen(
@@ -336,7 +398,11 @@ private fun NetKasAuthenticatedShell(
                     payment = livePayment,
                     customer = customer,
                     settings = successData.settings,
-                )
+                ).onFailure { err ->
+                    scope.launch {
+                        snackbarHostState.showSnackbar(err.localizedMessage ?: "Gagal membuka layanan cetak.")
+                    }
+                }
             },
             onShareWhatsApp = {
                 ReceiptService.shareReceiptViaWhatsApp(
@@ -344,7 +410,11 @@ private fun NetKasAuthenticatedShell(
                     payment = livePayment,
                     customer = customer,
                     settings = successData.settings,
-                )
+                ).onFailure {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Tidak ada aplikasi yang mendukung pengiriman foto kuitansi.")
+                    }
+                }
             },
             onShareEmail = {
                 ReceiptService.shareReceiptViaEmail(
@@ -352,10 +422,16 @@ private fun NetKasAuthenticatedShell(
                     payment = livePayment,
                     customer = customer,
                     settings = successData.settings,
-                )
+                ).onFailure {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Tidak ada aplikasi Email yang terpasang di perangkat ini.")
+                    }
+                }
             },
             onSaveImageToDevice = {
-                val safeNo = livePayment.receiptNumber.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
+                val safeNo = livePayment.receiptNumber
+                    .ifBlank { livePayment.id.ifBlank { "netkas" } }
+                    .replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
                 pendingReceiptSaveTarget = Triple(livePayment, customer, successData.settings)
                 saveReceiptPngLauncher.launch("Kuitansi_${safeNo}.png")
             },
@@ -489,6 +565,14 @@ private fun NetKasAuthenticatedShell(
                                 when (activeTab) {
                                     NetKasTab.DASHBOARD -> DashboardScreen(
                                         data = data,
+                                        themeMode = themeMode,
+                                        onCycleThemeMode = {
+                                            val next = themeMode.nextMode()
+                                            onSelectThemeMode(next)
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("Mode tampilan: ${next.labelId}")
+                                            }
+                                        },
                                         onPreviousMonth = viewModel::selectPreviousMonth,
                                         onNextMonth = viewModel::selectNextMonth,
                                         onOpenMonthPicker = { showMonthPicker = true },
@@ -505,7 +589,11 @@ private fun NetKasAuthenticatedShell(
                                                 customer = item.customer,
                                                 yearMonth = data.selectedMonth,
                                                 settings = data.settings,
-                                            )
+                                            ).onFailure {
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar("Tidak dapat membuka WhatsApp atau aplikasi pesan.")
+                                                }
+                                            }
                                         },
                                         onOpenPaymentEdit = { payment ->
                                             val customer = data.customers.firstOrNull { it.id == payment.customerId }
@@ -540,13 +628,24 @@ private fun NetKasAuthenticatedShell(
                                                 customer = item.customer,
                                                 yearMonth = data.selectedMonth,
                                                 settings = data.settings,
-                                            )
+                                            ).onFailure {
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar("Tidak dapat membuka WhatsApp atau aplikasi pesan.")
+                                                }
+                                            }
                                         },
                                     )
 
                                     NetKasTab.REPORTS -> ReportsScreen(
                                         data = data,
                                         userEmail = userEmail,
+                                        themeMode = themeMode,
+                                        onSelectThemeMode = { selected ->
+                                            onSelectThemeMode(selected)
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("Mode tampilan: ${selected.labelId}")
+                                            }
+                                        },
                                         onPreviousMonth = viewModel::selectPreviousMonth,
                                         onNextMonth = viewModel::selectNextMonth,
                                         onOpenMonthPicker = { showMonthPicker = true },
@@ -611,8 +710,10 @@ private fun NetKasAuthenticatedShell(
                                 if (showSettingsDialog) {
                                     BusinessSettingsDialog(
                                         settings = data.settings,
+                                        themeMode = themeMode,
+                                        onSelectThemeMode = onSelectThemeMode,
                                         onDismiss = { showSettingsDialog = false },
-                                        onSave = { name, phone, address, bank, receiptFooter, days, enabled ->
+                                        onSave = { name, phone, address, bank, receiptFooter, days, enabled, onError ->
                                             viewModel.saveBusinessSettings(
                                                 businessName = name,
                                                 businessPhone = phone,
@@ -622,6 +723,7 @@ private fun NetKasAuthenticatedShell(
                                                 reminderDaysBefore = days,
                                                 remindersEnabled = enabled,
                                                 onDone = { showSettingsDialog = false },
+                                                onError = onError,
                                             )
                                         },
                                     )
@@ -631,7 +733,7 @@ private fun NetKasAuthenticatedShell(
                                     CustomerFormDialog(
                                         existing = existingCustomer,
                                         onDismiss = { customerFormTarget = null },
-                                        onSave = { name, phone, email, address, pkg, fee, due, active ->
+                                        onSave = { name, phone, email, address, pkg, fee, due, active, onError ->
                                             viewModel.saveCustomer(
                                                 existingCustomerId = existingCustomer?.id,
                                                 name = name,
@@ -642,7 +744,9 @@ private fun NetKasAuthenticatedShell(
                                                 monthlyFee = fee,
                                                 dueDay = due,
                                                 active = active,
+                                                notes = existingCustomer?.notes ?: "",
                                                 onDone = { customerFormTarget = null },
+                                                onError = onError,
                                             )
                                         },
                                         onDelete = existingCustomer?.let { c ->
@@ -662,7 +766,7 @@ private fun NetKasAuthenticatedShell(
                                         initialYearMonth = data.selectedMonth,
                                         existingPayment = existingPayment,
                                         onDismiss = { paymentFormTarget = null },
-                                        onSave = { ym, amount, wallet, bankRef, receiptNo, paidMillis, notes ->
+                                        onSave = { ym, amount, wallet, bankRef, receiptNo, paidMillis, notes, onError ->
                                             viewModel.recordOrUpdatePayment(
                                                 existingPaymentId = existingPayment?.id,
                                                 customer = customer,
@@ -679,6 +783,7 @@ private fun NetKasAuthenticatedShell(
                                                         receiptPreviewTarget = savedPayment
                                                     }
                                                 },
+                                                onError = onError,
                                             )
                                         },
                                         onDelete = existingPayment?.let { p ->
@@ -696,7 +801,7 @@ private fun NetKasAuthenticatedShell(
                                         initialYearMonth = data.selectedMonth,
                                         existing = existingTransfer,
                                         onDismiss = { transferFormTarget = null },
-                                        onSave = { ym, fromWallet, toWallet, amount, dateMillis, notes ->
+                                        onSave = { ym, fromWallet, toWallet, amount, dateMillis, notes, onError ->
                                             viewModel.saveWalletTransfer(
                                                 existingTransferId = existingTransfer?.id,
                                                 yearMonth = ym,
@@ -706,6 +811,7 @@ private fun NetKasAuthenticatedShell(
                                                 transferDateMillis = dateMillis,
                                                 notes = notes,
                                                 onDone = { transferFormTarget = null },
+                                                onError = onError,
                                             )
                                         },
                                         onDelete = existingTransfer?.let { t ->
@@ -750,7 +856,11 @@ private fun NetKasAuthenticatedShell(
                                                     customer = histCustomer,
                                                     yearMonth = data.selectedMonth,
                                                     settings = data.settings,
-                                                )
+                                                ).onFailure {
+                                                    scope.launch {
+                                                        snackbarHostState.showSnackbar("Tidak dapat membuka WhatsApp atau aplikasi pesan.")
+                                                    }
+                                                }
                                             },
                                         )
                                     }

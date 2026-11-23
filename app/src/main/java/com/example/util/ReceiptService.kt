@@ -46,213 +46,326 @@ object ReceiptService {
             "Metode Bayar" to payment.wallet.labelId,
         )
         if (payment.wallet == WalletType.BANK_TRANSFER && payment.bankReference.isNotBlank()) {
-            rows.add("Referensi Bank" to payment.bankReference.take(28))
+            rows.add("Referensi Bank" to payment.bankReference.trim())
         }
         if (!customer?.address.isNullOrBlank()) {
-            rows.add("Alamat" to customer.address.take(28))
+            rows.add("Alamat" to customer.address.trim())
         }
 
-        val width = 840
-        val bankPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#1E3A8A")
-            textSize = 23f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textAlign = Paint.Align.CENTER
-        }
-        val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#475569")
-            textSize = 23f
-            textAlign = Paint.Align.CENTER
-        }
-
-        val bankLines = if (settings.bankAccountInfo.isNotBlank()) {
-            wrapText(settings.bankAccountInfo.trim(), bankPaint, width - 160f)
-        } else {
-            emptyList()
-        }
-        val footerLines = wrapText(effectiveFooterText(settings), footerPaint, width - 128f)
-
-        val bankBlockHeight = if (bankLines.isNotEmpty()) 58f + (bankLines.size * 32f) + 28f else 0f
-        val notesHeight = if (payment.notes.isNotBlank()) 46f else 0f
-        val footerBlockHeight = 46f + (footerLines.size * 34f) + 52f
-
-        val estimatedHeight = 472f + (rows.size * 56f) + 20f + 155f + bankBlockHeight + notesHeight + footerBlockHeight
-        val height = maxOf(1280, estimatedHeight.toInt())
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-
-        // Clean paper background
-        canvas.drawColor(Color.parseColor("#FFFFFF"))
-
-        // Top Emerald Brand Header
-        val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#0B6E4F")
-        }
-        canvas.drawRect(0f, 0f, width.toFloat(), 230f, headerPaint)
-
-        // Subtle Gold Accent Bar
-        val accentPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#F59E0B")
-        }
-        canvas.drawRect(0f, 230f, width.toFloat(), 242f, accentPaint)
+        val width = 1080
+        val frameInset = 16f
+        val marginX = 36f
+        val contentWidth = width - (marginX * 2f)
+        val centerX = width / 2f
 
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            textSize = 44f
+            color = Color.BLACK
+            textSize = 64f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
         val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#D5F2E7")
-            textSize = 24f
+            color = Color.parseColor("#222222")
+            textSize = 36f
             textAlign = Paint.Align.CENTER
         }
-
-        val businessTitle = settings.businessName.ifBlank { "NetKas Wi-Fi" }
-        canvas.drawText(fitTextToWidth(businessTitle, titlePaint, width - 80f), width / 2f, 95f, titlePaint)
-        var headerSubY = 140f
-        if (settings.businessAddress.isNotBlank()) {
-            canvas.drawText(fitTextToWidth(settings.businessAddress, subtitlePaint, width - 96f), width / 2f, headerSubY, subtitlePaint)
-            headerSubY += 38f
+        val thickRulePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            strokeWidth = 6f
         }
-        if (settings.businessPhone.isNotBlank()) {
-            canvas.drawText("Telp / WA: ${settings.businessPhone}", width / 2f, headerSubY, subtitlePaint)
+        val thinRulePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            strokeWidth = 2.5f
         }
-
         val kuitansiLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#132A3E")
+            color = Color.BLACK
+            textSize = 46f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textAlign = Paint.Align.CENTER
+        }
+        val badgeBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#F3F4F6")
+        }
+        val badgeBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            style = Paint.Style.STROKE
+            strokeWidth = 4f
+        }
+        val badgeTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = 36f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textAlign = Paint.Align.CENTER
+        }
+        val dashPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#444444")
+            strokeWidth = 3.5f
+            style = Paint.Style.STROKE
+            pathEffect = DashPathEffect(floatArrayOf(16f, 10f), 0f)
+        }
+        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#333333")
+            textSize = 37f
+            textAlign = Paint.Align.LEFT
+        }
+        val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = 39f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textAlign = Paint.Align.RIGHT
+        }
+        val amountBoxBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#F5F5F5")
+        }
+        val amountBoxBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            style = Paint.Style.STROKE
+            strokeWidth = 4.5f
+        }
+        val totalLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#222222")
+            textSize = 32f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textAlign = Paint.Align.CENTER
+        }
+        val formattedTotal = Formatters.formatRupiah(payment.amount)
+        val totalValPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = 76f
+            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            textAlign = Paint.Align.CENTER
+        }
+        val maxTotalTextWidth = contentWidth - 48f
+        while (totalValPaint.textSize > 42f && totalValPaint.measureText(formattedTotal) > maxTotalTextWidth) {
+            totalValPaint.textSize -= 2f
+        }
+
+        val bankBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#FAFAFA")
+        }
+        val bankBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#222222")
+            style = Paint.Style.STROKE
+            strokeWidth = 3f
+        }
+        val bankHeaderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#222222")
             textSize = 30f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("KUITANSI PEMBAYARAN WI-FI", width / 2f, 305f, kuitansiLabelPaint)
-
-        // LUNAS Badge
-        val badgeRect = RectF(width / 2f - 125f, 326f, width / 2f + 125f, 382f)
-        val badgeBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#D5F2E7")
-        }
-        canvas.drawRoundRect(badgeRect, 28f, 28f, badgeBg)
-        val badgeText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#0B6E4F")
-            textSize = 26f
+        val bankPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = 36f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("STATUS: LUNAS", width / 2f, 363f, badgeText)
+        val notePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#333333")
+            textSize = 34f
+            textAlign = Paint.Align.CENTER
+        }
+        val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#222222")
+            textSize = 34f
+            textAlign = Paint.Align.CENTER
+        }
 
-        // Dashed divider
-        val dashPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#CBD5E1")
-            strokeWidth = 3f
+        // Pre-wrap all dynamic text blocks to span full width cleanly with zero truncation
+        val businessTitleLines = wrapText(
+            settings.businessName.ifBlank { "NetKas Wi-Fi" }.uppercase(),
+            titlePaint,
+            contentWidth,
+        )
+        val businessAddressLines = if (settings.businessAddress.isNotBlank()) {
+            wrapText(settings.businessAddress.trim(), subtitlePaint, contentWidth)
+        } else {
+            emptyList()
+        }
+        val businessPhoneLines = if (settings.businessPhone.isNotBlank()) {
+            wrapText("Telp / WA: ${settings.businessPhone.trim()}", subtitlePaint, contentWidth)
+        } else {
+            emptyList()
+        }
+        val wrappedRows = rows.map { (label, rawValue) ->
+            val labelWidth = labelPaint.measureText(label)
+            val maxValueWidth = (contentWidth - labelWidth - 28f).coerceAtLeast(contentWidth * 0.48f)
+            val lines = wrapText(rawValue.ifBlank { "-" }, valuePaint, maxValueWidth)
+            label to lines.ifEmpty { listOf("-") }
+        }
+        val bankLines = if (settings.bankAccountInfo.isNotBlank()) {
+            wrapText(settings.bankAccountInfo.trim(), bankPaint, contentWidth - 48f)
+        } else {
+            emptyList()
+        }
+        val noteLines = if (payment.notes.isNotBlank()) {
+            wrapText("Catatan: ${payment.notes.trim()}", notePaint, contentWidth)
+        } else {
+            emptyList()
+        }
+        val footerLines = wrapText(effectiveFooterText(settings), footerPaint, contentWidth)
+
+        fun layoutAndDraw(canvas: Canvas?): Float {
+            var y = frameInset + 48f
+
+            // Monochrome Header Block
+            val titleFm = titlePaint.fontMetrics
+            val titleStep = (titleFm.descent - titleFm.ascent) + 8f
+            businessTitleLines.forEach { line ->
+                canvas?.drawText(line, centerX, y - titleFm.ascent, titlePaint)
+                y += titleStep
+            }
+
+            val subFm = subtitlePaint.fontMetrics
+            val subStep = (subFm.descent - subFm.ascent) + 8f
+            if (businessAddressLines.isNotEmpty()) {
+                y += 8f
+                businessAddressLines.forEach { line ->
+                    canvas?.drawText(line, centerX, y - subFm.ascent, subtitlePaint)
+                    y += subStep
+                }
+            }
+            if (businessPhoneLines.isNotEmpty()) {
+                y += 6f
+                businessPhoneLines.forEach { line ->
+                    canvas?.drawText(line, centerX, y - subFm.ascent, subtitlePaint)
+                    y += subStep
+                }
+            }
+
+            // Classic double black horizontal divider under header
+            y += 26f
+            canvas?.drawLine(marginX, y, width - marginX, y, thickRulePaint)
+            canvas?.drawLine(marginX, y + 12f, width - marginX, y + 12f, thinRulePaint)
+            y += 42f
+
+            // Receipt Title
+            val kuitansiFm = kuitansiLabelPaint.fontMetrics
+            canvas?.drawText("KUITANSI PEMBAYARAN WI-FI", centerX, y - kuitansiFm.ascent, kuitansiLabelPaint)
+            y += (kuitansiFm.descent - kuitansiFm.ascent) + 22f
+
+            // High-contrast Monochrome LUNAS Stamp
+            val badgeWidth = 440f
+            val badgeHeight = 78f
+            val badgeRect = RectF(centerX - badgeWidth / 2f, y, centerX + badgeWidth / 2f, y + badgeHeight)
+            if (canvas != null) {
+                canvas.drawRoundRect(badgeRect, 14f, 14f, badgeBg)
+                canvas.drawRoundRect(badgeRect, 14f, 14f, badgeBorder)
+                val badgeFm = badgeTextPaint.fontMetrics
+                val badgeBaseline = badgeRect.centerY() - (badgeFm.ascent + badgeFm.descent) / 2f
+                canvas.drawText("STATUS: LUNAS", centerX, badgeBaseline, badgeTextPaint)
+            }
+            y += badgeHeight + 34f
+
+            // Monochrome Dashed Divider
+            canvas?.drawLine(marginX, y, width - marginX, y, dashPaint)
+            y += 32f
+
+            // Full-width Detail Rows with clean multi-line right-aligned wrapping
+            val labelFm = labelPaint.fontMetrics
+            val valueFm = valuePaint.fontMetrics
+            val topToBaseline = maxOf(-labelFm.ascent, -valueFm.ascent)
+            val rowLineStep = (valueFm.descent - valueFm.ascent) + 8f
+            val rowGap = 22f
+
+            wrappedRows.forEach { (label, valueLines) ->
+                val firstBaseline = y + topToBaseline
+                canvas?.drawText(label, marginX, firstBaseline, labelPaint)
+                valueLines.forEachIndexed { idx, line ->
+                    canvas?.drawText(line, width - marginX, firstBaseline + (idx * rowLineStep), valuePaint)
+                }
+                y += (valueLines.size * rowLineStep) + rowGap
+            }
+
+            // Monochrome Amount Highlight Box (full content width)
+            y += 10f
+            val amountBoxHeight = 200f
+            val amountBoxRect = RectF(marginX, y, width - marginX, y + amountBoxHeight)
+            if (canvas != null) {
+                canvas.drawRoundRect(amountBoxRect, 18f, 18f, amountBoxBg)
+                canvas.drawRoundRect(amountBoxRect, 18f, 18f, amountBoxBorder)
+                val totalLabelFm = totalLabelPaint.fontMetrics
+                val totalValFm = totalValPaint.fontMetrics
+                canvas.drawText(
+                    "TOTAL PEMBAYARAN DITERIMA",
+                    centerX,
+                    y + 30f - totalLabelFm.ascent,
+                    totalLabelPaint,
+                )
+                val valCenterY = y + 132f
+                val valBaseline = valCenterY - (totalValFm.ascent + totalValFm.descent) / 2f
+                canvas.drawText(formattedTotal, centerX, valBaseline, totalValPaint)
+            }
+            y += amountBoxHeight + 32f
+
+            // Monochrome Bank Account Transfer Info Box (if configured)
+            if (bankLines.isNotEmpty()) {
+                val bankHeaderFm = bankHeaderPaint.fontMetrics
+                val bankFm = bankPaint.fontMetrics
+                val bankHeaderH = bankHeaderFm.descent - bankHeaderFm.ascent
+                val bankLineStep = (bankFm.descent - bankFm.ascent) + 8f
+                val bankBoxHeight = 26f + bankHeaderH + 14f + (bankLines.size * bankLineStep) + 22f
+                val bankRect = RectF(marginX, y, width - marginX, y + bankBoxHeight)
+                if (canvas != null) {
+                    canvas.drawRoundRect(bankRect, 16f, 16f, bankBg)
+                    canvas.drawRoundRect(bankRect, 16f, 16f, bankBorder)
+                    canvas.drawText(
+                        "REKENING TRANSFER RESMI",
+                        centerX,
+                        y + 26f - bankHeaderFm.ascent,
+                        bankHeaderPaint,
+                    )
+                    var bY = y + 26f + bankHeaderH + 14f
+                    bankLines.forEach { line ->
+                        canvas.drawText(line, centerX, bY - bankFm.ascent, bankPaint)
+                        bY += bankLineStep
+                    }
+                }
+                y += bankBoxHeight + 28f
+            }
+
+            // Payment notes (wrapped full width)
+            if (noteLines.isNotEmpty()) {
+                val noteFm = notePaint.fontMetrics
+                val noteStep = (noteFm.descent - noteFm.ascent) + 8f
+                noteLines.forEach { line ->
+                    canvas?.drawText(line, centerX, y - noteFm.ascent, notePaint)
+                    y += noteStep
+                }
+                y += 20f
+            }
+
+            // Custom Footer Closing Message
+            canvas?.drawLine(marginX, y, width - marginX, y, dashPaint)
+            y += 32f
+            val footerFm = footerPaint.fontMetrics
+            val footerStep = (footerFm.descent - footerFm.ascent) + 8f
+            footerLines.forEach { line ->
+                canvas?.drawText(line, centerX, y - footerFm.ascent, footerPaint)
+                y += footerStep
+            }
+
+            return y + 40f + frameInset
+        }
+
+        // Pass 1: Measure exact height (zero clipping and zero wasted bottom whitespace)
+        val height = layoutAndDraw(null).toInt().coerceAtLeast(800)
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        // Pure white paper background
+        canvas.drawColor(Color.WHITE)
+
+        // Outer crisp monochrome frame (stays distinct in both WhatsApp Light & Dark mode)
+        val framePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#111111")
             style = Paint.Style.STROKE
-            pathEffect = DashPathEffect(floatArrayOf(12f, 8f), 0f)
+            strokeWidth = 5f
         }
-        canvas.drawLine(56f, 418f, width - 56f, 418f, dashPaint)
+        canvas.drawRect(frameInset, frameInset, width - frameInset, height - frameInset, framePaint)
 
-        // Detail rows
-        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#64748B")
-            textSize = 25f
-        }
-        val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#0F172A")
-            textSize = 26f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textAlign = Paint.Align.RIGHT
-        }
-
-        val maxValueWidth = width - 340f
-        var y = 472f
-        rows.forEach { (label, rawValue) ->
-            canvas.drawText(label, 56f, y, labelPaint)
-            val fittedValue = fitTextToWidth(rawValue, valuePaint, maxValueWidth)
-            canvas.drawText(fittedValue, width - 56f, y, valuePaint)
-            y += 56f
-        }
-
-        // Amount Highlight Box
-        val amountBoxTop = y + 20f
-        val amountBoxRect = RectF(56f, amountBoxTop, width - 56f, amountBoxTop + 135f)
-        val amountBoxBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#F1F8F5")
-        }
-        val amountBoxBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#0B6E4F")
-            style = Paint.Style.STROKE
-            strokeWidth = 3f
-        }
-        canvas.drawRoundRect(amountBoxRect, 20f, 20f, amountBoxBg)
-        canvas.drawRoundRect(amountBoxRect, 20f, 20f, amountBoxBorder)
-
-        val totalLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#0B6E4F")
-            textSize = 24f
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textAlign = Paint.Align.CENTER
-        }
-        val totalValPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#0B6E4F")
-            textSize = 48f
-            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
-            textAlign = Paint.Align.CENTER
-        }
-        canvas.drawText("TOTAL PEMBAYARAN DITERIMA", width / 2f, amountBoxTop + 44f, totalLabelPaint)
-        canvas.drawText(Formatters.formatRupiah(payment.amount), width / 2f, amountBoxTop + 106f, totalValPaint)
-
-        var cursorY = amountBoxTop + 165f
-
-        // Bank Account Transfer Info Box (if configured)
-        if (bankLines.isNotEmpty()) {
-            val bankBoxHeight = 52f + (bankLines.size * 32f)
-            val bankRect = RectF(56f, cursorY, width - 56f, cursorY + bankBoxHeight)
-            val bankBg = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#EFF6FF") }
-            val bankBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#93C5FD")
-                style = Paint.Style.STROKE
-                strokeWidth = 2f
-            }
-            canvas.drawRoundRect(bankRect, 16f, 16f, bankBg)
-            canvas.drawRoundRect(bankRect, 16f, 16f, bankBorder)
-
-            val bankHeaderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#1D4ED8")
-                textSize = 21f
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                textAlign = Paint.Align.CENTER
-            }
-            canvas.drawText("REKENING TRANSFER RESMI", width / 2f, cursorY + 32f, bankHeaderPaint)
-            var bLineY = cursorY + 64f
-            bankLines.forEach { line ->
-                canvas.drawText(line, width / 2f, bLineY, bankPaint)
-                bLineY += 32f
-            }
-            cursorY += bankBoxHeight + 28f
-        }
-
-        // Payment notes
-        if (payment.notes.isNotBlank()) {
-            val notePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#475569")
-                textSize = 22f
-                textAlign = Paint.Align.CENTER
-            }
-            canvas.drawText(
-                fitTextToWidth("Catatan: ${payment.notes}", notePaint, width - 112f),
-                width / 2f,
-                cursorY + 12f,
-                notePaint
-            )
-            cursorY += 46f
-        }
-
-        // Custom Footer Closing Message
-        canvas.drawLine(56f, cursorY, width - 56f, cursorY, dashPaint)
-        cursorY += 44f
-        footerLines.forEach { line ->
-            canvas.drawText(line, width / 2f, cursorY, footerPaint)
-            cursorY += 34f
-        }
+        // Pass 2: Draw full receipt
+        layoutAndDraw(canvas)
 
         return bitmap
     }
@@ -269,8 +382,20 @@ object ReceiptService {
                 if (paint.measureText(candidate) <= maxWidth) {
                     current = candidate
                 } else {
-                    if (current.isNotEmpty()) result.add(current)
-                    current = fitTextToWidth(word, paint, maxWidth)
+                    if (current.isNotEmpty()) {
+                        result.add(current)
+                        current = ""
+                    }
+                    if (paint.measureText(word) <= maxWidth) {
+                        current = word
+                    } else {
+                        // Break extra-long unbroken tokens across lines instead of cutting off with ellipsis
+                        val broken = breakLongWord(word, paint, maxWidth)
+                        if (broken.size > 1) {
+                            result.addAll(broken.dropLast(1))
+                        }
+                        current = broken.lastOrNull().orEmpty()
+                    }
                 }
             }
             if (current.isNotEmpty()) result.add(current)
@@ -278,14 +403,19 @@ object ReceiptService {
         return result
     }
 
-    private fun fitTextToWidth(text: String, paint: Paint, maxWidth: Float): String {
-        if (paint.measureText(text) <= maxWidth) return text
-        val ellipsis = "…"
-        var end = text.length
-        while (end > 1 && paint.measureText(text.substring(0, end) + ellipsis) > maxWidth) {
-            end--
+    private fun breakLongWord(word: String, paint: Paint, maxWidth: Float): List<String> {
+        if (word.isEmpty() || paint.measureText(word) <= maxWidth) return listOf(word)
+        val parts = mutableListOf<String>()
+        var start = 0
+        while (start < word.length) {
+            var end = start + 1
+            while (end < word.length && paint.measureText(word, start, end + 1) <= maxWidth) {
+                end++
+            }
+            parts.add(word.substring(start, end))
+            start = end
         }
-        return text.substring(0, end) + ellipsis
+        return parts
     }
 
     fun saveReceiptPngToCache(
@@ -296,7 +426,9 @@ object ReceiptService {
     ): Uri {
         val bitmap = renderReceiptBitmap(payment, customer, settings)
         val dir = File(context.cacheDir, "receipts").apply { mkdirs() }
-        val safeReceipt = payment.receiptNumber.replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
+        val safeReceipt = payment.receiptNumber
+            .ifBlank { payment.id.ifBlank { "netkas" } }
+            .replace(Regex("[^a-zA-Z0-9_\\-]"), "_")
         val file = File(dir, "kuitansi_${safeReceipt}.png")
         try {
             FileOutputStream(file).use { out ->
@@ -338,10 +470,11 @@ object ReceiptService {
         payment: Payment,
         customer: Customer?,
         settings: BusinessSettings,
-    ) {
-        val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager ?: return
+    ): Result<Unit> = runCatching {
+        val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager
+            ?: throw IllegalStateException("Layanan cetak (Print) tidak tersedia di perangkat ini.")
         val bitmap = renderReceiptBitmap(payment, customer, settings)
-        val jobName = "Kuitansi_${payment.receiptNumber}"
+        val jobName = "Kuitansi_${payment.receiptNumber.ifBlank { payment.id }}"
 
         val adapter = object : PrintDocumentAdapter() {
             override fun onLayout(
@@ -368,11 +501,16 @@ object ReceiptService {
                 cancellationSignal: CancellationSignal?,
                 callback: WriteResultCallback
             ) {
+                if (cancellationSignal?.isCanceled == true) {
+                    callback.onWriteCancelled()
+                    return
+                }
                 val pdfDoc = PdfDocument()
                 try {
                     val pageWidth = 420
-                    val aspectHeight = ((bitmap.height.toFloat() / bitmap.width.toFloat()) * pageWidth).toInt()
-                    val pageHeight = aspectHeight.coerceAtLeast(620)
+                    val pageHeight = ((bitmap.height.toFloat() / bitmap.width.toFloat()) * pageWidth)
+                        .toInt()
+                        .coerceAtLeast(1)
                     val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, 1).create()
                     val page = pdfDoc.startPage(pageInfo)
                     val destRect = RectF(0f, 0f, pageWidth.toFloat(), pageHeight.toFloat())
@@ -404,7 +542,7 @@ object ReceiptService {
         payment: Payment,
         customer: Customer?,
         settings: BusinessSettings,
-    ) {
+    ): Result<Unit> = runCatching {
         val uri = saveReceiptPngToCache(context, payment, customer, settings)
         val caption = buildString {
             append("Halo ${payment.customerName},\n")
@@ -464,7 +602,7 @@ object ReceiptService {
         payment: Payment,
         customer: Customer?,
         settings: BusinessSettings,
-    ) {
+    ): Result<Unit> = runCatching {
         val uri = saveReceiptPngToCache(context, payment, customer, settings)
         val subject = "Kuitansi Pembayaran Wi-Fi ${Formatters.formatYearMonthFull(payment.yearMonth)} - ${payment.receiptNumber}"
         val body = buildString {
@@ -503,7 +641,7 @@ object ReceiptService {
         customer: Customer,
         yearMonth: String,
         settings: BusinessSettings,
-    ) {
+    ): Result<Unit> = runCatching {
         val biz = settings.businessName.ifBlank { "NetKas Wi-Fi" }
         val message = buildString {
             append("Halo ${customer.name},\n")

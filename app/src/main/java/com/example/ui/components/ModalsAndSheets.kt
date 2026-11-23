@@ -20,9 +20,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccountBalance
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
+import androidx.compose.material.icons.rounded.BrightnessAuto
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -61,10 +64,10 @@ import com.example.data.NetKasRepository
 import com.example.data.Payment
 import com.example.data.WalletTransfer
 import com.example.data.WalletType
-import com.example.ui.theme.AmberCash
-import com.example.ui.theme.BankBlue
 import com.example.ui.theme.CrimsonExpense
 import com.example.ui.theme.EmeraldPrimary
+import com.example.ui.theme.netKasSemanticColors
+import com.example.util.AppThemeMode
 import com.example.util.Formatters
 import java.util.Calendar
 import java.util.Locale
@@ -131,7 +134,7 @@ fun MonthPickerDialog(
                                 Text(
                                     text = "Bulan Ini",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = EmeraldPrimary,
+                                    color = netKasSemanticColors().income,
                                     fontWeight = FontWeight.Bold,
                                 )
                             } else if (ym < current) {
@@ -165,18 +168,21 @@ fun CustomerFormDialog(
         monthlyFee: Long,
         dueDay: Long,
         active: Boolean,
+        onError: () -> Unit,
     ) -> Unit,
     onDelete: (() -> Unit)? = null,
 ) {
+    val semantic = netKasSemanticColors()
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
     var phone by remember(existing?.id) { mutableStateOf(existing?.phone ?: "") }
     var email by remember(existing?.id) { mutableStateOf(existing?.email ?: "") }
     var address by remember(existing?.id) { mutableStateOf(existing?.address ?: "") }
-    var packageName by remember(existing?.id) { mutableStateOf(existing?.packageName ?: "20 Mbps Home") }
-    var feeText by remember(existing?.id) { mutableStateOf((existing?.monthlyFee ?: 150_000L).toString()) }
+    var packageName by remember(existing?.id) { mutableStateOf(existing?.packageName ?: "25 Mbps") }
+    var feeText by remember(existing?.id) { mutableStateOf((existing?.monthlyFee ?: 180_000L).toString()) }
     var dueDayText by remember(existing?.id) { mutableStateOf((existing?.dueDay ?: 10L).toString()) }
     var active by remember(existing?.id) { mutableStateOf(existing?.active ?: true) }
     var errorMsg by remember(existing?.id) { mutableStateOf<String?>(null) }
+    var isSaving by remember(existing?.id) { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -210,7 +216,7 @@ fun CustomerFormDialog(
                 }
 
                 if (errorMsg != null) {
-                    Text(errorMsg!!, color = CrimsonExpense, style = MaterialTheme.typography.bodySmall)
+                    Text(errorMsg!!, color = semantic.danger, style = MaterialTheme.typography.bodySmall)
                 }
 
                 OutlinedTextField(
@@ -291,7 +297,8 @@ fun CustomerFormDialog(
                     if (existing != null && onDelete != null) {
                         OutlinedButton(
                             onClick = { showDeleteConfirm = true },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = CrimsonExpense),
+                            enabled = !isSaving,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = semantic.danger),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.testTag("delete_customer_button"),
                         ) {
@@ -311,12 +318,14 @@ fun CustomerFormDialog(
                     }
                     OutlinedButton(
                         onClick = onDismiss,
+                        enabled = !isSaving,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.weight(1f),
                     ) {
                         Text("Batal")
                     }
                     Button(
+                        enabled = !isSaving,
                         onClick = {
                             val fee = feeText.toLongOrNull() ?: 0L
                             val due = (dueDayText.toLongOrNull() ?: 10L).coerceIn(1L, 28L)
@@ -325,7 +334,12 @@ fun CustomerFormDialog(
                                 packageName.isBlank() -> errorMsg = "Paket Wi-Fi wajib diisi."
                                 fee <= 0L -> errorMsg = "Tarif bulanan harus lebih dari Rp 0."
                                 fee > 100_000_000L -> errorMsg = "Tarif bulanan maksimal Rp 100.000.000."
-                                else -> onSave(name, phone, email, address, packageName, fee, due, active)
+                                else -> {
+                                    isSaving = true
+                                    onSave(name, phone, email, address, packageName, fee, due, active) {
+                                        isSaving = false
+                                    }
+                                }
                             }
                         },
                         shape = RoundedCornerShape(14.dp),
@@ -333,7 +347,7 @@ fun CustomerFormDialog(
                             .weight(1.3f)
                             .testTag("save_customer_button"),
                     ) {
-                        Text("Simpan")
+                        Text(if (isSaving) "Menyimpan..." else "Simpan")
                     }
                 }
             }
@@ -355,9 +369,11 @@ fun PaymentFormDialog(
         receiptNumber: String,
         paidDateMillis: Long,
         notes: String,
+        onError: () -> Unit,
     ) -> Unit,
     onDelete: (() -> Unit)? = null,
 ) {
+    val semantic = netKasSemanticColors()
     val stateKey = existingPayment?.id ?: "${customer.id}_$initialYearMonth"
     var yearMonth by remember(stateKey) { mutableStateOf(existingPayment?.yearMonth ?: initialYearMonth) }
     var paidDateMillis by remember(stateKey) {
@@ -377,6 +393,7 @@ fun PaymentFormDialog(
     }
     var notes by remember(stateKey) { mutableStateOf(existingPayment?.notes ?: "") }
     var errorMsg by remember(stateKey) { mutableStateOf<String?>(null) }
+    var isSaving by remember(stateKey) { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -465,7 +482,7 @@ fun PaymentFormDialog(
                 )
 
                 if (errorMsg != null) {
-                    Text(errorMsg!!, color = CrimsonExpense, style = MaterialTheme.typography.bodySmall)
+                    Text(errorMsg!!, color = semantic.danger, style = MaterialTheme.typography.bodySmall)
                 }
 
                 // Wallet separation selector (Dompet Tunai vs Transfer Bank)
@@ -482,7 +499,7 @@ fun PaymentFormDialog(
                         title = "Dompet Tunai",
                         icon = Icons.Rounded.AccountBalanceWallet,
                         selected = wallet == WalletType.CASH,
-                        accent = AmberCash,
+                        accent = semantic.cash,
                         onClick = { wallet = WalletType.CASH },
                         modifier = Modifier
                             .weight(1f)
@@ -492,7 +509,7 @@ fun PaymentFormDialog(
                         title = "Transfer Bank",
                         icon = Icons.Rounded.AccountBalance,
                         selected = wallet == WalletType.BANK_TRANSFER,
-                        accent = BankBlue,
+                        accent = semantic.bank,
                         onClick = { wallet = WalletType.BANK_TRANSFER },
                         modifier = Modifier
                             .weight(1f)
@@ -545,7 +562,8 @@ fun PaymentFormDialog(
                     if (existingPayment != null && onDelete != null) {
                         OutlinedButton(
                             onClick = { showDeleteConfirm = true },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = CrimsonExpense),
+                            enabled = !isSaving,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = semantic.danger),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.testTag("delete_payment_button"),
                         ) {
@@ -565,18 +583,21 @@ fun PaymentFormDialog(
                     }
                     OutlinedButton(
                         onClick = onDismiss,
+                        enabled = !isSaving,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.weight(1f),
                     ) {
                         Text("Batal")
                     }
                     Button(
+                        enabled = !isSaving,
                         onClick = {
                             val amount = amountText.toLongOrNull() ?: 0L
                             when {
                                 amount <= 0L -> errorMsg = "Nominal harus lebih dari Rp 0."
                                 amount > 100_000_000L -> errorMsg = "Nominal pembayaran maksimal Rp 100.000.000."
                                 else -> {
+                                    isSaving = true
                                     onSave(
                                         yearMonth,
                                         amount,
@@ -585,17 +606,22 @@ fun PaymentFormDialog(
                                         receiptNumber,
                                         paidDateMillis,
                                         notes,
-                                    )
+                                    ) {
+                                        isSaving = false
+                                    }
                                 }
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = EmeraldPrimary,
+                            contentColor = Color.White,
+                        ),
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .weight(1.3f)
                             .testTag("save_payment_button"),
                     ) {
-                        Text("Simpan Lunas")
+                        Text(if (isSaving) "Menyimpan..." else "Simpan Lunas")
                     }
                 }
             }
@@ -615,9 +641,11 @@ fun WalletTransferDialog(
         amount: Long,
         transferDateMillis: Long,
         notes: String,
+        onError: () -> Unit,
     ) -> Unit,
     onDelete: (() -> Unit)? = null,
 ) {
+    val semantic = netKasSemanticColors()
     val stateKey = existing?.id ?: initialYearMonth
     var yearMonth by remember(stateKey) { mutableStateOf(existing?.yearMonth ?: initialYearMonth) }
     var transferDateMillis by remember(stateKey) {
@@ -631,6 +659,7 @@ fun WalletTransferDialog(
     var amountText by remember(stateKey) { mutableStateOf(existing?.amount?.toString() ?: "") }
     var notes by remember(stateKey) { mutableStateOf(existing?.notes ?: "") }
     var errorMsg by remember(stateKey) { mutableStateOf<String?>(null) }
+    var isSaving by remember(stateKey) { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -716,7 +745,7 @@ fun WalletTransferDialog(
                 )
 
                 if (errorMsg != null) {
-                    Text(errorMsg!!, color = CrimsonExpense, style = MaterialTheme.typography.bodySmall)
+                    Text(errorMsg!!, color = semantic.danger, style = MaterialTheme.typography.bodySmall)
                 }
 
                 Text("Arah Perpindahan Saldo *", style = MaterialTheme.typography.labelLarge)
@@ -728,7 +757,7 @@ fun WalletTransferDialog(
                         title = "Tunai → Bank",
                         icon = Icons.Rounded.SwapHoriz,
                         selected = fromWallet == WalletType.CASH,
-                        accent = BankBlue,
+                        accent = semantic.bank,
                         onClick = { fromWallet = WalletType.CASH },
                         modifier = Modifier
                             .weight(1f)
@@ -738,7 +767,7 @@ fun WalletTransferDialog(
                         title = "Bank → Tunai",
                         icon = Icons.Rounded.SwapHoriz,
                         selected = fromWallet == WalletType.BANK_TRANSFER,
-                        accent = AmberCash,
+                        accent = semantic.cash,
                         onClick = { fromWallet = WalletType.BANK_TRANSFER },
                         modifier = Modifier
                             .weight(1f)
@@ -772,7 +801,8 @@ fun WalletTransferDialog(
                     if (existing != null && onDelete != null) {
                         OutlinedButton(
                             onClick = { showDeleteConfirm = true },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = CrimsonExpense),
+                            enabled = !isSaving,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = semantic.danger),
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.testTag("delete_transfer_button"),
                         ) {
@@ -792,18 +822,25 @@ fun WalletTransferDialog(
                     }
                     OutlinedButton(
                         onClick = onDismiss,
+                        enabled = !isSaving,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.weight(1f),
                     ) {
                         Text("Batal")
                     }
                     Button(
+                        enabled = !isSaving,
                         onClick = {
                             val amount = amountText.toLongOrNull() ?: 0L
                             when {
                                 amount <= 0L -> errorMsg = "Nominal pindah saldo harus lebih dari Rp 0."
                                 amount > 100_000_000L -> errorMsg = "Nominal pindah saldo maksimal Rp 100.000.000."
-                                else -> onSave(yearMonth, fromWallet, toWallet, amount, transferDateMillis, notes)
+                                else -> {
+                                    isSaving = true
+                                    onSave(yearMonth, fromWallet, toWallet, amount, transferDateMillis, notes) {
+                                        isSaving = false
+                                    }
+                                }
                             }
                         },
                         shape = RoundedCornerShape(14.dp),
@@ -811,7 +848,7 @@ fun WalletTransferDialog(
                             .weight(1.3f)
                             .testTag("save_transfer_button"),
                     ) {
-                        Text("Simpan")
+                        Text(if (isSaving) "Menyimpan..." else "Simpan")
                     }
                 }
             }
@@ -849,7 +886,10 @@ private fun ConfirmDeleteDialog(
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = CrimsonExpense),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = CrimsonExpense,
+                    contentColor = Color.White,
+                ),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.testTag("confirm_delete_button"),
             ) {
@@ -860,8 +900,82 @@ private fun ConfirmDeleteDialog(
 }
 
 @Composable
+fun ThemeModeSelector(
+    selectedMode: AppThemeMode,
+    onSelectMode: (AppThemeMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = "Mode Tampilan Aplikasi",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            val items = listOf(
+                Triple(AppThemeMode.LIGHT, Icons.Rounded.LightMode, "theme_mode_light"),
+                Triple(AppThemeMode.DARK, Icons.Rounded.DarkMode, "theme_mode_dark"),
+                Triple(AppThemeMode.SYSTEM, Icons.Rounded.BrightnessAuto, "theme_mode_system"),
+            )
+            items.forEach { (mode, icon, tag) ->
+                val isSelected = selectedMode == mode
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    border = BorderStroke(
+                        width = if (isSelected) 1.5.dp else 1.dp,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.outlineVariant,
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onSelectMode(mode) }
+                        .testTag(tag),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            text = mode.labelId,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun BusinessSettingsDialog(
     settings: BusinessSettings,
+    themeMode: AppThemeMode,
+    onSelectThemeMode: (AppThemeMode) -> Unit,
     onDismiss: () -> Unit,
     onSave: (
         businessName: String,
@@ -871,19 +985,21 @@ fun BusinessSettingsDialog(
         receiptFooterText: String,
         reminderDaysBefore: Long,
         remindersEnabled: Boolean,
+        onError: () -> Unit,
     ) -> Unit,
 ) {
-    var businessName by remember(settings) { mutableStateOf(settings.businessName) }
-    var businessPhone by remember(settings) { mutableStateOf(settings.businessPhone) }
-    var businessAddress by remember(settings) { mutableStateOf(settings.businessAddress) }
-    var bankAccountInfo by remember(settings) { mutableStateOf(settings.bankAccountInfo) }
-    var receiptFooterText by remember(settings) {
+    var businessName by remember { mutableStateOf(settings.businessName) }
+    var businessPhone by remember { mutableStateOf(settings.businessPhone) }
+    var businessAddress by remember { mutableStateOf(settings.businessAddress) }
+    var bankAccountInfo by remember { mutableStateOf(settings.bankAccountInfo) }
+    var receiptFooterText by remember {
         mutableStateOf(
             settings.receiptFooterText.ifBlank { BusinessSettings.DEFAULT_RECEIPT_FOOTER }
         )
     }
-    var reminderDaysText by remember(settings) { mutableStateOf(settings.reminderDaysBefore.toString()) }
-    var remindersEnabled by remember(settings) { mutableStateOf(settings.remindersEnabled) }
+    var reminderDaysText by remember { mutableStateOf(settings.reminderDaysBefore.toString()) }
+    var remindersEnabled by remember { mutableStateOf(settings.remindersEnabled) }
+    var isSaving by remember { mutableStateOf(false) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -912,6 +1028,11 @@ fun BusinessSettingsDialog(
                         Icon(Icons.Rounded.Close, contentDescription = "Tutup")
                     }
                 }
+
+                ThemeModeSelector(
+                    selectedMode = themeMode,
+                    onSelectMode = onSelectThemeMode,
+                )
 
                 OutlinedTextField(
                     value = businessName,
@@ -994,13 +1115,16 @@ fun BusinessSettingsDialog(
                 ) {
                     OutlinedButton(
                         onClick = onDismiss,
+                        enabled = !isSaving,
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.weight(1f),
                     ) {
                         Text("Batal")
                     }
                     Button(
+                        enabled = !isSaving,
                         onClick = {
+                            isSaving = true
                             onSave(
                                 businessName,
                                 businessPhone,
@@ -1009,14 +1133,16 @@ fun BusinessSettingsDialog(
                                 receiptFooterText,
                                 (reminderDaysText.toLongOrNull() ?: 3L).coerceIn(0L, 15L),
                                 remindersEnabled,
-                            )
+                            ) {
+                                isSaving = false
+                            }
                         },
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .weight(1.2f)
                             .testTag("save_settings_button"),
                     ) {
-                        Text("Simpan")
+                        Text(if (isSaving) "Menyimpan..." else "Simpan")
                     }
                 }
             }
