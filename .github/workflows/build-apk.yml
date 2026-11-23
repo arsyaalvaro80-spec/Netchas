@@ -66,8 +66,14 @@ jobs:
             tr -d '\r\n ' < debug.keystore.base64 | base64 -d > debug.keystore || rm -f debug.keystore
           fi
           if [ ! -s debug.keystore ] || ! keytool -list -keystore debug.keystore -storepass android > /dev/null 2>&1; then
-            rm -f debug.keystore
-            keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "::error::debug.keystore.base64 tidak ditemukan dan secret DEBUG_KEYSTORE_BASE64 belum diisi! Tanpa keystore asli proyek ini, SHA-1 APK tidak cocok dengan Firebase sehingga Login Google akan gagal."
+            exit 1
+          fi
+          SHA1_HEX="$(keytool -list -v -keystore debug.keystore -storepass android -alias androiddebugkey | awk '/SHA1:/ {gsub(":", "", $2); print tolower($2); exit}')"
+          echo "Signing APK with debug.keystore SHA-1: $SHA1_HEX"
+          if ! grep -qi "$SHA1_HEX" app/google-services.json; then
+            echo "::error::SHA-1 debug.keystore ($SHA1_HEX) TIDAK COCOK dengan certificate_hash di app/google-services.json! Login Google akan gagal. Pastikan secret DEBUG_KEYSTORE_BASE64 menggunakan debug.keystore.base64 asli dari proyek ini."
+            exit 1
           fi
           if [ ! -f .env ] && [ -f .env.example ]; then
             cp .env.example .env
