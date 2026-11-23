@@ -15,7 +15,11 @@
         },
         "businessPhone": {
           "type": "string",
-          "description": "Business WhatsApp or contact phone number."
+          "description": "Primary business CS / WhatsApp contact phone number."
+        },
+        "businessPhone2": {
+          "type": "string",
+          "description": "Optional secondary business CS / WhatsApp contact phone number."
         },
         "businessAddress": {
           "type": "string",

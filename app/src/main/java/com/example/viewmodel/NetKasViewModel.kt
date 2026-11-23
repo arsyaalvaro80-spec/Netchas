@@ -457,6 +457,7 @@ class NetKasViewModel(
     fun saveBusinessSettings(
         businessName: String,
         businessPhone: String,
+        businessPhone2: String,
         businessAddress: String,
         bankAccountInfo: String,
         receiptFooterText: String,
@@ -470,6 +471,7 @@ class NetKasViewModel(
                 userId = currentUserId,
                 businessName = businessName,
                 businessPhone = businessPhone,
+                businessPhone2 = businessPhone2,
                 businessAddress = businessAddress,
                 bankAccountInfo = bankAccountInfo,
                 receiptFooterText = receiptFooterText,

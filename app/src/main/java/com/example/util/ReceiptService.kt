@@ -182,8 +182,9 @@ object ReceiptService {
         } else {
             emptyList()
         }
-        val businessPhoneLines = if (settings.businessPhone.isNotBlank()) {
-            wrapText("Telp / WA: ${settings.businessPhone.trim()}", subtitlePaint, contentWidth)
+        val combinedPhones = settings.formattedPhones()
+        val businessPhoneLines = if (combinedPhones.isNotBlank()) {
+            wrapText("Telp / WA: $combinedPhones", subtitlePaint, contentWidth)
         } else {
             emptyList()
         }
@@ -555,8 +556,9 @@ object ReceiptService {
             if (settings.bankAccountInfo.isNotBlank()) {
                 append("• Rekening Transfer: ${settings.bankAccountInfo}\n")
             }
-            if (settings.businessPhone.isNotBlank()) {
-                append("• CS / WA: ${settings.businessPhone}\n")
+            val csPhones = settings.formattedPhones()
+            if (csPhones.isNotBlank()) {
+                append("• CS / WA: $csPhones\n")
             }
             append("\n${effectiveFooterText(settings)}")
         }
@@ -616,8 +618,9 @@ object ReceiptService {
             if (settings.bankAccountInfo.isNotBlank()) {
                 append("Rekening Transfer: ${settings.bankAccountInfo}\n")
             }
-            if (settings.businessPhone.isNotBlank()) {
-                append("CS / WA: ${settings.businessPhone}\n")
+            val csPhones = settings.formattedPhones()
+            if (csPhones.isNotBlank()) {
+                append("CS / WA: $csPhones\n")
             }
             append("\n${effectiveFooterText(settings)}")
         }
@@ -652,8 +655,9 @@ object ReceiptService {
             if (settings.bankAccountInfo.isNotBlank()) {
                 append("\nPembayaran transfer dapat dikirim ke:\n${settings.bankAccountInfo}\n")
             }
-            if (settings.businessPhone.isNotBlank()) {
-                append("\nHubungi CS / WA: ${settings.businessPhone}\n")
+            val csPhones = settings.formattedPhones()
+            if (csPhones.isNotBlank()) {
+                append("\nHubungi CS / WA: $csPhones\n")
             }
             append("\nMohon konfirmasi setelah melakukan pembayaran. Terima kasih!")
         }

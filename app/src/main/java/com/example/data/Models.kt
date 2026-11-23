@@ -23,6 +23,7 @@ data class BusinessSettings(
     val userId: String = "",
     val businessName: String = "NetKas Wi-Fi",
     val businessPhone: String = "",
+    val businessPhone2: String = "",
     val businessAddress: String = "",
     val bankAccountInfo: String = "",
     val receiptFooterText: String = DEFAULT_RECEIPT_FOOTER,
@@ -31,6 +32,11 @@ data class BusinessSettings(
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null,
 ) {
+    fun formattedPhones(): String =
+        listOf(businessPhone.trim(), businessPhone2.trim())
+            .filter { it.isNotEmpty() }
+            .joinToString(" / ")
+
     companion object {
         const val DEFAULT_RECEIPT_FOOTER =
             "Terima kasih atas pembayaran tepat waktu Anda.\nSimpan kuitansi ini sebagai bukti pembayaran sah."

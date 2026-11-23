@@ -980,6 +980,7 @@ fun BusinessSettingsDialog(
     onSave: (
         businessName: String,
         businessPhone: String,
+        businessPhone2: String,
         businessAddress: String,
         bankAccountInfo: String,
         receiptFooterText: String,
@@ -990,6 +991,7 @@ fun BusinessSettingsDialog(
 ) {
     var businessName by remember { mutableStateOf(settings.businessName) }
     var businessPhone by remember { mutableStateOf(settings.businessPhone) }
+    var businessPhone2 by remember { mutableStateOf(settings.businessPhone2) }
     var businessAddress by remember { mutableStateOf(settings.businessAddress) }
     var bankAccountInfo by remember { mutableStateOf(settings.bankAccountInfo) }
     var receiptFooterText by remember {
@@ -1046,13 +1048,24 @@ fun BusinessSettingsDialog(
                 OutlinedTextField(
                     value = businessPhone,
                     onValueChange = { businessPhone = it.take(30) },
-                    label = { Text("Nomor HP / WhatsApp Usaha") },
+                    label = { Text("Nomor HP / WA CS 1") },
                     placeholder = { Text("Contoh: 081234567890") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("settings_business_phone_input"),
+                )
+                OutlinedTextField(
+                    value = businessPhone2,
+                    onValueChange = { businessPhone2 = it.take(30) },
+                    label = { Text("Nomor HP / WA CS 2 (opsional)") },
+                    placeholder = { Text("Contoh: 085712345678") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("settings_business_phone2_input"),
                 )
                 OutlinedTextField(
                     value = bankAccountInfo,
@@ -1128,6 +1141,7 @@ fun BusinessSettingsDialog(
                             onSave(
                                 businessName,
                                 businessPhone,
+                                businessPhone2,
                                 businessAddress,
                                 bankAccountInfo,
                                 receiptFooterText,

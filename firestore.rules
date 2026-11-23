@@ -48,13 +48,14 @@ service cloud.firestore {
           'remindersEnabled', 'createdAt', 'updatedAt'
         ]) &&
         data.keys().hasOnly([
-          'userId', 'businessName', 'businessPhone', 'businessAddress',
+          'userId', 'businessName', 'businessPhone', 'businessPhone2', 'businessAddress',
           'bankAccountInfo', 'receiptFooterText', 'monthlyExpenseBudget',
           'reminderDaysBefore', 'remindersEnabled', 'createdAt', 'updatedAt'
         ]) &&
         data.userId is string && data.userId == userId && data.userId.size() <= 128 &&
         data.businessName is string && data.businessName.size() >= 1 && data.businessName.size() <= 80 &&
         data.businessPhone is string && data.businessPhone.size() <= 30 &&
+        (!('businessPhone2' in data) || (data.businessPhone2 is string && data.businessPhone2.size() <= 30)) &&
         data.businessAddress is string && data.businessAddress.size() <= 180 &&
         data.bankAccountInfo is string && data.bankAccountInfo.size() <= 180 &&
         data.receiptFooterText is string && data.receiptFooterText.size() <= 240 &&
@@ -153,7 +154,7 @@ service cloud.firestore {
           incoming().userId == existing().userId &&
           incoming().createdAt == existing().createdAt &&
           incoming().diff(existing()).affectedKeys().hasOnly([
-            'businessName', 'businessPhone', 'businessAddress',
+            'businessName', 'businessPhone', 'businessPhone2', 'businessAddress',
             'bankAccountInfo', 'receiptFooterText', 'reminderDaysBefore',
             'remindersEnabled', 'updatedAt'
           ]);

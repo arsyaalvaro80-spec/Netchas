@@ -26,7 +26,8 @@ jobs:
         run: |
           set +o pipefail
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          yes | sdkmanager --install "platforms;android-36" "platforms;android-36.1" "build-tools;36.0.0" "platform-tools"
+          sdkmanager --install "platform-tools" "platforms;android-36" "platforms;android-36.1" "build-tools;36.0.0"
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
 
       - name: Set up Gradle 9.3.1
         uses: gradle/actions/setup-gradle@v6
@@ -36,9 +37,11 @@ jobs:
 
       - name: Prepare debug keystore and env
         run: |
-          if [ -f debug.keystore.base64 ] && [ ! -f debug.keystore ]; then
-            tr -d '\r\n' < debug.keystore.base64 | base64 -d > debug.keystore
-          elif [ ! -f debug.keystore ]; then
+          if [ -f debug.keystore.base64 ]; then
+            tr -d '\r\n ' < debug.keystore.base64 | base64 -d > debug.keystore || rm -f debug.keystore
+          fi
+          if [ ! -s debug.keystore ] || ! keytool -list -keystore debug.keystore -storepass android > /dev/null 2>&1; then
+            rm -f debug.keystore
             keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
           if [ ! -f .env ] && [ -f .env.example ]; then
@@ -46,13 +49,15 @@ jobs:
           fi
 
       - name: Build Debug APK
+        env:
+          GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
         run: >-
           gradle :app:assembleDebug
-          --no-daemon
           --no-configuration-cache
           --max-workers=2
           --console=plain
-          -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+          --stacktrace
+          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
 
       - name: Upload NetKas APK
         uses: actions/upload-artifact@v4

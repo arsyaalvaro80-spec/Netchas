@@ -45,4 +45,27 @@ class NetKasLogicTest {
         assertEquals(AppThemeMode.SYSTEM, AppThemeMode.fromCode(null))
         assertEquals(AppThemeMode.SYSTEM, AppThemeMode.fromCode("unknown"))
     }
+
+    @Test
+    fun `BusinessSettings formattedPhones combines one or two CS numbers cleanly`() {
+        assertEquals(
+            "",
+            com.example.data.BusinessSettings(businessPhone = "", businessPhone2 = "").formattedPhones()
+        )
+        assertEquals(
+            "081234567890",
+            com.example.data.BusinessSettings(businessPhone = " 081234567890 ", businessPhone2 = "").formattedPhones()
+        )
+        assertEquals(
+            "085712345678",
+            com.example.data.BusinessSettings(businessPhone = "", businessPhone2 = "085712345678").formattedPhones()
+        )
+        assertEquals(
+            "081234567890 / 085712345678",
+            com.example.data.BusinessSettings(
+                businessPhone = "081234567890",
+                businessPhone2 = "085712345678",
+            ).formattedPhones()
+        )
+    }
 }

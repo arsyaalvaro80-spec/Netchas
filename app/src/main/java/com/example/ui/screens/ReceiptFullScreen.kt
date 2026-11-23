@@ -99,6 +99,7 @@ fun ReceiptFullScreen(
     onSaveReceiptProfile: (
         businessName: String,
         businessPhone: String,
+        businessPhone2: String,
         bankAccountInfo: String,
         receiptFooterText: String,
     ) -> Unit,
@@ -304,15 +305,17 @@ fun ReceiptFullScreen(
                         modifier = Modifier.size(14.dp),
                     )
                     Spacer(Modifier.width(5.dp))
+                    val combinedPhones = settings.formattedPhones()
                     Text(
-                        text = if (settings.businessPhone.isNotBlank()) {
-                            "Telp / WA: ${settings.businessPhone}"
+                        text = if (combinedPhones.isNotBlank()) {
+                            "Telp / WA: $combinedPhones"
                         } else {
-                            "Ketuk untuk mengisi Nomor HP Usaha"
+                            "Ketuk untuk mengisi Nomor HP / CS Usaha"
                         },
                         style = MaterialTheme.typography.labelMedium,
                         color = ReceiptInkBlack,
                         fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -567,8 +570,8 @@ fun ReceiptFullScreen(
         ReceiptProfileQuickEditDialog(
             settings = settings,
             onDismiss = { showQuickEditDialog = false },
-            onSave = { bizName, bizPhone, bankInfo, footerText ->
-                onSaveReceiptProfile(bizName, bizPhone, bankInfo, footerText)
+            onSave = { bizName, bizPhone, bizPhone2, bankInfo, footerText ->
+                onSaveReceiptProfile(bizName, bizPhone, bizPhone2, bankInfo, footerText)
                 showQuickEditDialog = false
             },
         )
@@ -623,12 +626,14 @@ private fun ReceiptProfileQuickEditDialog(
     onSave: (
         businessName: String,
         businessPhone: String,
+        businessPhone2: String,
         bankAccountInfo: String,
         receiptFooterText: String,
     ) -> Unit,
 ) {
     var businessName by remember { mutableStateOf(settings.businessName) }
     var businessPhone by remember { mutableStateOf(settings.businessPhone) }
+    var businessPhone2 by remember { mutableStateOf(settings.businessPhone2) }
     var bankAccountInfo by remember { mutableStateOf(settings.bankAccountInfo) }
     var receiptFooterText by remember {
         mutableStateOf(
@@ -687,13 +692,25 @@ private fun ReceiptProfileQuickEditDialog(
                 OutlinedTextField(
                     value = businessPhone,
                     onValueChange = { businessPhone = it.take(30) },
-                    label = { Text("Nomor HP / WhatsApp Usaha") },
+                    label = { Text("Nomor HP / WA CS 1") },
                     placeholder = { Text("Contoh: 081234567890") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("receipt_edit_business_phone"),
+                )
+
+                OutlinedTextField(
+                    value = businessPhone2,
+                    onValueChange = { businessPhone2 = it.take(30) },
+                    label = { Text("Nomor HP / WA CS 2 (opsional)") },
+                    placeholder = { Text("Contoh: 085712345678") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("receipt_edit_business_phone2"),
                 )
 
                 OutlinedTextField(
@@ -737,6 +754,7 @@ private fun ReceiptProfileQuickEditDialog(
                             onSave(
                                 businessName,
                                 businessPhone,
+                                businessPhone2,
                                 bankAccountInfo,
                                 receiptFooterText,
                             )

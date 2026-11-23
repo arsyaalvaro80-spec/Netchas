@@ -435,10 +435,11 @@ private fun NetKasAuthenticatedShell(
                 pendingReceiptSaveTarget = Triple(livePayment, customer, successData.settings)
                 saveReceiptPngLauncher.launch("Kuitansi_${safeNo}.png")
             },
-            onSaveReceiptProfile = { bizName, bizPhone, bankInfo, footerText ->
+            onSaveReceiptProfile = { bizName, bizPhone, bizPhone2, bankInfo, footerText ->
                 viewModel.saveBusinessSettings(
                     businessName = bizName,
                     businessPhone = bizPhone,
+                    businessPhone2 = bizPhone2,
                     businessAddress = successData.settings.businessAddress,
                     bankAccountInfo = bankInfo,
                     receiptFooterText = footerText,
@@ -713,10 +714,11 @@ private fun NetKasAuthenticatedShell(
                                         themeMode = themeMode,
                                         onSelectThemeMode = onSelectThemeMode,
                                         onDismiss = { showSettingsDialog = false },
-                                        onSave = { name, phone, address, bank, receiptFooter, days, enabled, onError ->
+                                        onSave = { name, phone, phone2, address, bank, receiptFooter, days, enabled, onError ->
                                             viewModel.saveBusinessSettings(
                                                 businessName = name,
                                                 businessPhone = phone,
+                                                businessPhone2 = phone2,
                                                 businessAddress = address,
                                                 bankAccountInfo = bank,
                                                 receiptFooterText = receiptFooter,

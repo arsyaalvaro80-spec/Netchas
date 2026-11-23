@@ -141,6 +141,7 @@ class NetKasRepository(
         userId: String,
         businessName: String,
         businessPhone: String,
+        businessPhone2: String,
         businessAddress: String,
         bankAccountInfo: String,
         receiptFooterText: String,
@@ -152,6 +153,7 @@ class NetKasRepository(
             val uid = requireUserId(userId)
             val cleanName = businessName.trim().ifEmpty { "NetKas Wi-Fi" }.take(80)
             val cleanPhone = businessPhone.trim().take(30)
+            val cleanPhone2 = businessPhone2.trim().take(30)
             val cleanAddress = businessAddress.trim().take(180)
             val cleanBank = bankAccountInfo.trim().take(180)
             val cleanFooter = receiptFooterText.trim().take(240)
@@ -164,6 +166,7 @@ class NetKasRepository(
                     mapOf(
                         "businessName" to cleanName,
                         "businessPhone" to cleanPhone,
+                        "businessPhone2" to cleanPhone2,
                         "businessAddress" to cleanAddress,
                         "bankAccountInfo" to cleanBank,
                         "receiptFooterText" to cleanFooter,
@@ -178,6 +181,7 @@ class NetKasRepository(
                         "userId" to uid,
                         "businessName" to cleanName,
                         "businessPhone" to cleanPhone,
+                        "businessPhone2" to cleanPhone2,
                         "businessAddress" to cleanAddress,
                         "bankAccountInfo" to cleanBank,
                         "receiptFooterText" to cleanFooter,

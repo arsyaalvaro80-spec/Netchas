@@ -49,6 +49,7 @@ function validSettingsPayload(uid, ts = nowPast()) {
     userId: uid,
     businessName: "NetKas Wi-Fi Nusantara",
     businessPhone: "081234567890",
+    businessPhone2: "085798765432",
     businessAddress: "Jl. Merdeka No. 12, Bandung",
     bankAccountInfo: "BCA 1234567890 a.n. NetKas",
     receiptFooterText: "Terima kasih atas pembayaran tepat waktu Anda.\nSimpan kuitansi ini sebagai bukti sah.",
@@ -133,10 +134,19 @@ test("BusinessSettings: owner create, partial update with receiptFooterText, leg
     aliceDb.doc(`users/${ALICE_UID}/settings/profile`).update({
       businessName: "Maju Jaya Net",
       businessPhone: "085700001111",
+      businessPhone2: "081322223333",
       bankAccountInfo: "BRI 0099887766 a.n. Maju Jaya",
       receiptFooterText: "Terima kasih! Hubungi CS jika internet bermasalah.",
       remindersEnabled: false,
       updatedAt: nowPast(1000),
+    })
+  );
+
+  // Reject oversized businessPhone2 (> 30 chars)
+  await assertFails(
+    aliceDb.doc(`users/${ALICE_UID}/settings/profile`).update({
+      businessPhone2: "0".repeat(31),
+      updatedAt: nowPast(600),
     })
   );
 
