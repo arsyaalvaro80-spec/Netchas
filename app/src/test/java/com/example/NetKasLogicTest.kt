@@ -68,4 +68,17 @@ class NetKasLogicTest {
             ).formattedPhones()
         )
     }
+
+    @Test
+    fun `formatPoliteRecipient prepends Bapak Ibu unless honorific already exists`() {
+        assertEquals("Bapak/Ibu Budi", com.example.util.ReceiptService.formatPoliteRecipient("Budi"))
+        assertEquals("Bapak/Ibu", com.example.util.ReceiptService.formatPoliteRecipient("   "))
+        assertEquals("Bapak Budi", com.example.util.ReceiptService.formatPoliteRecipient("Bapak Budi"))
+        assertEquals("Ibu Siti", com.example.util.ReceiptService.formatPoliteRecipient("Ibu Siti"))
+        assertEquals("Pak Joko", com.example.util.ReceiptService.formatPoliteRecipient("Pak Joko"))
+        assertEquals("Bpk. Andi", com.example.util.ReceiptService.formatPoliteRecipient("Bpk. Andi"))
+        assertEquals("Bapak/Ibu Rina", com.example.util.ReceiptService.formatPoliteRecipient("Bapak/Ibu Rina"))
+        assertEquals("Bapak/Ibu Putra", com.example.util.ReceiptService.formatPoliteRecipient("Putra"))
+        assertEquals("Bapak/Ibu Budiman", com.example.util.ReceiptService.formatPoliteRecipient("Budiman"))
+    }
 }

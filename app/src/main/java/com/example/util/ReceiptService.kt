@@ -32,6 +32,18 @@ object ReceiptService {
     fun effectiveFooterText(settings: BusinessSettings): String =
         settings.receiptFooterText.trim().ifEmpty { BusinessSettings.DEFAULT_RECEIPT_FOOTER }
 
+    private val EXISTING_HONORIFIC_REGEX = Regex(
+        pattern = "^(bapak/ibu|bpk/ibu|bp/ibu|bapak|bpk|bp|pak|ibu|bu|sdr|sdri|tuan|tn|nyonya|ny)(?:[.\\s/]+|$)",
+        option = RegexOption.IGNORE_CASE,
+    )
+
+    fun formatPoliteRecipient(rawName: String): String {
+        val clean = rawName.trim()
+        if (clean.isEmpty()) return "Bapak/Ibu"
+        if (EXISTING_HONORIFIC_REGEX.containsMatchIn(clean)) return clean
+        return "Bapak/Ibu $clean"
+    }
+
     fun renderReceiptBitmap(
         payment: Payment,
         customer: Customer?,
@@ -546,7 +558,7 @@ object ReceiptService {
     ): Result<Unit> = runCatching {
         val uri = saveReceiptPngToCache(context, payment, customer, settings)
         val caption = buildString {
-            append("Halo ${payment.customerName},\n")
+            append("Halo ${formatPoliteRecipient(payment.customerName)},\n")
             append("Berikut kuitansi pembayaran Wi-Fi *${settings.businessName.ifBlank { "NetKas Wi-Fi" }}*:\n")
             append("• Periode: ${Formatters.formatYearMonthFull(payment.yearMonth)}\n")
             append("• Paket: ${payment.packageName}\n")
@@ -608,7 +620,7 @@ object ReceiptService {
         val uri = saveReceiptPngToCache(context, payment, customer, settings)
         val subject = "Kuitansi Pembayaran Wi-Fi ${Formatters.formatYearMonthFull(payment.yearMonth)} - ${payment.receiptNumber}"
         val body = buildString {
-            append("Yth. ${payment.customerName},\n\n")
+            append("Yth. ${formatPoliteRecipient(payment.customerName)},\n\n")
             append("Terlampir foto kuitansi pembayaran layanan Wi-Fi ${settings.businessName.ifBlank { "NetKas Wi-Fi" }}.\n")
             append("Periode: ${Formatters.formatYearMonthFull(payment.yearMonth)}\n")
             append("Paket: ${payment.packageName}\n")
@@ -647,7 +659,7 @@ object ReceiptService {
     ): Result<Unit> = runCatching {
         val biz = settings.businessName.ifBlank { "NetKas Wi-Fi" }
         val message = buildString {
-            append("Halo ${customer.name},\n")
+            append("Halo ${formatPoliteRecipient(customer.name)},\n")
             append("Pengingat tagihan Wi-Fi *$biz* untuk periode *${Formatters.formatYearMonthFull(yearMonth)}*:\n")
             append("• Paket: ${customer.packageName}\n")
             append("• Tagihan: ${Formatters.formatRupiah(customer.monthlyFee)}\n")
